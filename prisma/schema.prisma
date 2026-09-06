@@ -1,0 +1,416 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Nivel {
+  Principiante
+  Avanzado
+}
+
+enum EstadoLlegada {
+  Confirmado
+  EnDuda       @map("En duda")
+  NoConfirmado @map("No confirmado")
+}
+
+enum MovimientoTipo {
+  traje
+  remera
+  rifa
+  pago
+  ajuste
+}
+
+enum MovimientoEstado {
+  Pagado
+  Pendiente
+  Parcial
+}
+
+enum IndumentariaItem {
+  RemeraOficial    @map("Remera oficial")
+  Pantalon         @map("Pantalón")
+  Zapatillas
+  Medias
+  Gorra
+  AccesorioDeNaipe @map("Accesorio de naipe")
+}
+
+enum EntregaEstado {
+  Entregado
+  Pendiente
+}
+
+enum BeneficioEstado {
+  Rendido
+  Pendiente
+}
+
+enum InstrumentoEstado {
+  Bueno
+  Regular
+  NecesitaReparacion @map("Necesita reparación")
+  DeBaja             @map("De baja")
+}
+
+enum ItemEtiqueta {
+  Necesidad
+  ParaVenta @map("Para venta")
+}
+
+enum ItemPrioridad {
+  Urgente
+  Deseable
+}
+
+enum TipoCaixa {
+  Vazada
+  ConCilindro @map("Con cilindro")
+}
+
+enum CajaMovimientoTipo {
+  ingreso
+  egreso
+}
+
+enum AgendaEventoTipo {
+  fechaClave
+  ensayo
+  beneficio
+  presentacion
+}
+
+model Bateria {
+  id            String   @id @default(cuid())
+  nombre        String
+  comparsa      String?
+  paletaColores Json?
+  createdAt     DateTime @default(now())
+
+  membresias   Membresia[]
+  naipes       Naipe[]
+  ritmistas    Ritmista[]
+  ediciones    Edicion[]
+  instrumentos Instrumento[]
+  repuestos    Repuesto[]
+
+  @@map("baterias")
+}
+
+model Naipe {
+  id        String  @id @default(cuid())
+  bateriaId String
+  bateria   Bateria @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
+  nombre    String
+  orden     Int     @default(0)
+
+  @@map("naipes")
+}
+
+/// Padrón general — atemporal, sin año
+model Ritmista {
+  id              String   @id @default(cuid())
+  bateriaId       String
+  bateria         Bateria  @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
+  nombre          String
+  apellido        String
+  dni             String
+  telefono        String
+  fechaNacimiento DateTime
+  naipeReferencia String
+  nivel           Nivel    @default(Principiante)
+  talleRemera     String
+  calzado         String
+  createdAt       DateTime @default(now())
+
+  historial        NaipeHistorialItem[]
+  ritmistasEdicion RitmistaEdicion[]
+
+  @@map("ritmistas")
+}
+
+/// Historial de qué naipe tocó cada ritmista, por período — para el padrón histórico
+model NaipeHistorialItem {
+  id         String   @id @default(cuid())
+  ritmistaId String
+  ritmista   Ritmista @relation(fields: [ritmistaId], references: [id], onDelete: Cascade)
+  naipe      String
+  periodo    String
+  desde      Int
+
+  @@map("naipe_historial")
+}
+
+model Instrumento {
+  id            String            @id @default(cuid())
+  bateriaId     String
+  bateria       Bateria           @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
+  tipo          String
+  marca         String?
+  pulgadas      Decimal?          @db.Decimal(4, 1)
+  tipoCaixa     TipoCaixa?
+  estado        InstrumentoEstado @default(Bueno)
+  cantidad      Int               @default(1)
+  etiqueta      ItemEtiqueta?
+  prioridad     ItemPrioridad?
+  costoEstimado Decimal?          @db.Decimal(12, 2)
+
+  @@map("instrumentos")
+}
+
+model Repuesto {
+  id            String            @id @default(cuid())
+  bateriaId     String
+  bateria       Bateria           @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
+  categoria     String
+  descripcion   String
+  cantidad      Int               @default(1)
+  etiqueta      ItemEtiqueta?
+  prioridad     ItemPrioridad?
+  costoEstimado Decimal?          @db.Decimal(12, 2)
+
+  @@map("repuestos")
+}
+
+model Edicion {
+  planNaipes Json @default("{}")
+  nochesCarnaval Json      @default("[]")
+  ultimaNoche    DateTime? @db.Date
+  id             String    @id @default(cuid())
+  bateriaId      String
+  bateria        Bateria   @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
+  anioCarnaval   Int
+  activa         Boolean   @default(false)
+  fechaCreacion  DateTime  @default(now())
+
+  ritmistasEdicion  RitmistaEdicion[]
+  stockIndumentaria StockIndumentaria[]
+  cajaMovimientos   CajaMovimiento[]
+  agendaEventos     AgendaEvento[]
+
+  @@unique([bateriaId, anioCarnaval])
+  @@map("ediciones")
+}
+
+/// Tabla puente: ritmista activo en una edición específica de Carnaval
+model RitmistaEdicion {
+  id                  String        @id @default(cuid())
+  edicionId           String
+  edicion             Edicion       @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  ritmistaId          String
+  ritmista            Ritmista      @relation(fields: [ritmistaId], references: [id], onDelete: Cascade)
+  naipe               String
+  estadoLlegada       EstadoLlegada @default(NoConfirmado)
+  beneficiosAsignados Int           @default(0)
+  beneficiosVendidos  Int           @default(0)
+
+  movimientos MovimientoCuentaCorriente[]
+  entregas    EntregaIndumentaria[]
+  beneficios  BeneficioMovimiento[]
+  rifas       Rifa[]
+
+  @@unique([edicionId, ritmistaId])
+  @@map("ritmistas_edicion")
+}
+
+model MovimientoCuentaCorriente {
+  id                String           @id @default(cuid())
+  ritmistaEdicionId String
+  ritmistaEdicion   RitmistaEdicion  @relation(fields: [ritmistaEdicionId], references: [id], onDelete: Cascade)
+  tipo              MovimientoTipo
+  concepto          String
+  fecha             DateTime
+  monto             Decimal          @db.Decimal(12, 2)
+  estado            MovimientoEstado
+  registradoPor     String
+  createdAt         DateTime         @default(now())
+
+  @@map("movimientos_cuenta_corriente")
+}
+
+model EntregaIndumentaria {
+  id                String           @id @default(cuid())
+  ritmistaEdicionId String
+  ritmistaEdicion   RitmistaEdicion  @relation(fields: [ritmistaEdicionId], references: [id], onDelete: Cascade)
+  item              IndumentariaItem
+  estado            EntregaEstado    @default(Pendiente)
+  fechaEntrega      DateTime?
+  entregadoPor      String?
+
+  @@map("entregas_indumentaria")
+}
+
+model BeneficioMovimiento {
+  id                String          @id @default(cuid())
+  ritmistaEdicionId String
+  ritmistaEdicion   RitmistaEdicion @relation(fields: [ritmistaEdicionId], references: [id], onDelete: Cascade)
+  concepto          String
+  fecha             DateTime
+  monto             Decimal         @db.Decimal(12, 2)
+  estado            BeneficioEstado
+  registradoPor     String
+  createdAt         DateTime        @default(now())
+
+  @@map("beneficios_movimientos")
+}
+
+model StockIndumentaria {
+  id                String  @id @default(cuid())
+  edicionId         String
+  edicion           Edicion @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  talle             String
+  cantidadStock     Int     @default(0)
+  cantidadEntregada Int     @default(0)
+
+  @@unique([edicionId, talle])
+  @@map("stock_indumentaria")
+}
+
+model Rifa {
+  id                String          @id @default(cuid())
+  ritmistaEdicionId String
+  ritmistaEdicion   RitmistaEdicion @relation(fields: [ritmistaEdicionId], references: [id], onDelete: Cascade)
+  numerosAsignados  Int             @default(0)
+  numerosVendidos   Int             @default(0)
+  montoPorNumero    Decimal         @db.Decimal(12, 2)
+
+  @@map("rifas")
+}
+
+model CajaMovimiento {
+  id            String             @id @default(cuid())
+  edicionId     String
+  edicion       Edicion            @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  tipo          CajaMovimientoTipo
+  categoria     String
+  concepto      String
+  monto         Decimal            @db.Decimal(12, 2)
+  fecha         DateTime
+  registradoPor String
+
+  @@map("caja_movimientos")
+}
+
+model AgendaEvento {
+  titulo            String           @default("")
+  recordarDiasAntes Int              @default(1)
+  cancelado         Boolean          @default(false)
+  registradoPor     String?
+  actualizadoPor    String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  id                String           @id @default(cuid())
+  edicionId         String
+  edicion           Edicion          @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  tipo              AgendaEventoTipo
+  fecha             DateTime
+  hora              String?
+  lugar             String?
+  descripcion       String?
+
+  @@index([edicionId, fecha])
+  @@map("agenda_eventos")
+}
+
+// Better Auth stores credential hashes in Account.password, never on Usuario.
+model Usuario {
+  id            String      @id @default(cuid())
+  nombre        String
+  email         String      @unique
+  emailVerified Boolean     @default(false)
+  image         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  membresias    Membresia[]
+
+  @@map("usuarios")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      Usuario  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  issuer                String
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  Usuario   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([issuer, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+enum RolMembresia {
+  director
+}
+
+model Membresia {
+  id        String       @id @default(cuid())
+  usuarioId String       @map("usuario_id")
+  bateriaId String       @map("bateria_id")
+  rol       RolMembresia @default(director)
+  createdAt DateTime     @default(now())
+  usuario   Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  bateria   Bateria      @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, bateriaId])
+  @@index([bateriaId])
+  @@map("membresias")
+}
+
+// Preserve who reverted a record even though the original operation deletes it.
+model Auditoria {
+  id            String   @id @default(cuid())
+  bateriaId     String
+  usuarioId     String
+  registradoPor String
+  accion        String
+  entidadId     String
+  datos         Json
+  createdAt     DateTime @default(now())
+
+  @@index([bateriaId, createdAt])
+  @@map("auditoria")
+}

@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {familiaNaipe, unirPlanes} from '../src/lib/naipes-familias';
+import type {PlanNaipe} from '../src/lib/naipes-plan-utils';
+for(const s of ['Caixas','Caixa 14"','caxias 14',' CAIXA 12” '])assert.equal(familiaNaipe(s),'Caixas');
+for(const s of ['Repique','Repiques 12"','repique 10'])assert.equal(familiaNaipe(s),'Repiques');
+for(const s of ['Surdo','Surdos','Surdo 1ra','Surdo 2da','Surdo 3ra'])assert.equal(familiaNaipe(s),'Surdos');
+assert.equal(familiaNaipe('Repique especial'),'Repique especial');
+const p:PlanNaipe={nombre:'Caixas',objetivo:55,estado:'Pendiente',x:0,y:0,columnas:4};
+assert.equal(unirPlanes([p,{...p,nombre:'Caixa 14"',objetivo:10}])[0].objetivo,55);
+assert.equal(unirPlanes([{...p,nombre:'Caixa 12"',objetivo:5},{...p,nombre:'Caixa 14"',objetivo:10}])[0].objetivo,15);
+console.log('PASS familias, tamaños, voces, nombres propios y conservación de metas sin duplicar total.');

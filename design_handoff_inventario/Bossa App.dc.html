@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;}
+*{box-sizing:border-box;font-family:'Geist',sans-serif;font-feature-settings:"ss01","cv11";}
+.mono-num{font-feature-settings:"zero","ss01" !important;font-variant-numeric:slashed-zero;}
+input,select,button{font-family:'Geist',sans-serif;outline:none;}
+::placeholder{color:#9B9B9B;}
+</style>
+</helmet>
+
+<div style="{{ s.shell }}">
+
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ s.sidebar }}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px;">
+<div style="{{ logoImgStyleSidebar }}"></div>
+        <svg width="30" height="30" viewBox="0 0 40 40" style="{{ logoSvgStyle }}">
+          <circle cx="20" cy="20" r="16" fill="none" style="stroke:{{ c.primary }}" stroke-width="1.8"/>
+          <g fill="{{ c.primary }}"><rect x="18.3" y="1.5" width="3.4" height="4" rx="0.8"/><rect x="18.3" y="34.5" width="3.4" height="4" rx="0.8"/><rect x="1.5" y="18.3" width="4" height="3.4" rx="0.8"/><rect x="34.5" y="18.3" width="4" height="3.4" rx="0.8"/><rect x="6.2" y="6.2" width="3.6" height="3.6" rx="0.8" transform="rotate(45 8 8)"/><rect x="30.2" y="30.2" width="3.6" height="3.6" rx="0.8" transform="rotate(45 32 32)"/><rect x="6.2" y="30.2" width="3.6" height="3.6" rx="0.8" transform="rotate(45 8 32)"/><rect x="30.2" y="6.2" width="3.6" height="3.6" rx="0.8" transform="rotate(45 32 8)"/></g>
+          <g style="stroke:{{ c.primary }}" stroke-width="1.1"><line x1="10" y1="15" x2="30" y2="15.6"/><line x1="10" y1="19" x2="30" y2="19.6"/><line x1="10" y1="23" x2="30" y2="23.6"/></g>
+        </svg>
+        <div style="font-weight:800;font-size:16px;color:{{ c.text }};">{{ batteryName }}</div>
+      </div>
+
+      <div style="{{ s.moduleSwitchWrap }}">
+        <button onClick="{{ goModuleDb }}" style="{{ moduleBtnStyle.db }}">Base de Datos</button>
+        <button onClick="{{ goModuleCarnaval }}" style="{{ moduleBtnStyle.carnaval }}">Carnaval</button>
+      </div>
+
+      <sc-if value="{{ isDb }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ goNaipes }}" style="{{ navBtnStyle.naipes }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:{{ navIconColor.naipes }}" stroke-width="1.8"><rect x="3" y="4" width="18" height="5" rx="1.5"/><rect x="3" y="11" width="18" height="5" rx="1.5"/><rect x="3" y="18" width="10" height="2" rx="1"/></svg>Naipes</button>
+        <button onClick="{{ goRitmistasDb }}" style="{{ navBtnStyle.ritmistasDb }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:{{ navIconColor.ritmistasDb }}" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="18" cy="9" r="2.4"/><path d="M15.5 14c2.6.3 4.5 2.4 4.5 5"/></svg>Ritmistas</button>
+        <button onClick="{{ goInventario }}" style="{{ navBtnStyle.inventario }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:{{ navIconColor.inventario }}" stroke-width="1.8"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v9l9 5 9-5V8"/><path d="M12 13v9"/></svg>Inventario</button>
+      </sc-if>
+      <sc-if value="{{ isCarnaval }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ goDashboard }}" style="{{ navBtnStyle.dashboard }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:{{ navIconColor.dashboard }}" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>Dashboard</button>
+        <button onClick="{{ goRitmistasEd }}" style="{{ navBtnStyle.ritmistasEd }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:{{ navIconColor.ritmistasEd }}" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="18" cy="9" r="2.4"/><path d="M15.5 14c2.6.3 4.5 2.4 4.5 5"/></svg>Ritmistas</button>
+        <button onClick="{{ goPresupuesto }}" style="{{ navBtnStyle.presupuesto }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:{{ navIconColor.presupuesto }}" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 9h18"/><circle cx="16" cy="14" r="1.4" fill="{{ navIconColor.presupuesto }}" stroke="none"/></svg>Presupuesto</button>
+        <button onClick="{{ goAgenda }}" style="{{ navBtnStyle.agenda }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:{{ navIconColor.agenda }}" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Agenda</button>
+      </sc-if>
+
+      <div style="flex:1;"></div>
+
+      <sc-if value="{{ isCarnaval }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ s.editionPicker }}">
+          <button onClick="{{ prevEdition }}" style="{{ s.editionArrow }}">‹</button>
+          <div style="{{ s.mono }};flex:1;text-align:center;font-weight:600;font-size:13px;color:{{ c.text }};">{{ edition }}</div>
+          <button onClick="{{ nextEdition }}" style="{{ s.editionArrow }}">›</button>
+        </div>
+      </sc-if>
+
+      <button onClick="{{ goConfig }}" style="{{ navBtnStyle.config }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="stroke:{{ navIconColor.config }}" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4.5a7.6 7.6 0 00-1.7-1l-.3-2.5h-4l-.3 2.5a7.6 7.6 0 00-1.7 1l-2.4-.5-2 3.4L6.6 11a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-.5a7.6 7.6 0 001.7 1l.3 2.5h4l.3-2.5a7.6 7.6 0 001.7-1l2.4.5 2-3.4z"/></svg>Configuración</button>
+      <button onClick="{{ toggleDark }}" style="{{ s.darkToggle }}">{{ darkToggleLabel }}</button>
+    </div>
+  </sc-if>
+
+  <div style="{{ s.mainCol }}">
+
+    <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ s.topBar }}">
+        <div style="font-weight:800;font-size:20px;color:{{ c.text }};">{{ sectionTitle }}</div>
+        <div style="font-size:13px;color:{{ c.textMuted }};">{{ sectionSubtitle }}</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ s.mobileHeader }}">
+        <div style="display:flex;align-items:center;gap:8px;">
+<div style="{{ logoImgStyleMobile }}"></div>
+          <svg width="24" height="24" viewBox="0 0 40 40" style="{{ logoSvgStyle }}"><circle cx="20" cy="20" r="16" fill="none" style="stroke:{{ c.primary }}" stroke-width="1.8"/><g fill="{{ c.primary }}"><rect x="18.3" y="1.5" width="3.4" height="4" rx="0.8"/><rect x="18.3" y="34.5" width="3.4" height="4" rx="0.8"/><rect x="1.5" y="18.3" width="4" height="3.4" rx="0.8"/><rect x="34.5" y="18.3" width="4" height="3.4" rx="0.8"/></g><g style="stroke:{{ c.primary }}" stroke-width="1.1"><line x1="10" y1="15" x2="30" y2="15.6"/><line x1="10" y1="19" x2="30" y2="19.6"/><line x1="10" y1="23" x2="30" y2="23.6"/></g></svg>
+          <div style="font-weight:800;font-size:15px;color:{{ c.text }};">{{ sectionTitle }}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <sc-if value="{{ isCarnaval }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ s.editionPickerMobile }}">
+              <button onClick="{{ prevEdition }}" style="{{ s.editionArrowMobile }}">‹</button>
+              <div style="{{ s.mono }};font-weight:600;font-size:12px;color:{{ c.text }};padding:0 4px;">{{ edition }}</div>
+              <button onClick="{{ nextEdition }}" style="{{ s.editionArrowMobile }}">›</button>
+            </div>
+          </sc-if>
+          <button onClick="{{ goConfig }}" style="{{ s.iconBtnMobile }}">⚙</button>
+          <button onClick="{{ toggleDark }}" style="{{ s.darkToggleMobile }}">{{ darkToggleIcon }}</button>
+        </div>
+      </div>
+      <div style="{{ s.moduleSwitchWrapMobile }}">
+        <button onClick="{{ goModuleDb }}" style="{{ moduleBtnStyleMobile.db }}">Base de Datos</button>
+        <button onClick="{{ goModuleCarnaval }}" style="{{ moduleBtnStyleMobile.carnaval }}">Carnaval</button>
+      </div>
+    </sc-if>
+
+    <div style="{{ s.content }}">
+
+      <sc-if value="{{ section === 'naipes' }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ s.grid3 }}">
+          <sc-for list="{{ naipeCards }}" as="n" hint-placeholder-count="7">
+            <div style="{{ s.card }}">
+              <div style="font-size:12px;font-weight:600;color:{{ c.textMuted }};margin-bottom:6px;">{{ n.name }}</div>
+              <div style="{{ s.mono }};font-size:28px;font-weight:600;color:{{ c.text }};margin-bottom:6px;">{{ n.total }}</div>
+              <div style="font-size:12px;color:{{ c.textMuted }};">{{ n.breakdown }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showRitmistasDb }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.searchRow }}">
+          <input placeholder="Buscar ritmista por nombre" style="{{ s.searchInput }}"/>
+          <button onClick="{{ openAddRitmista }}" style="{{ s.primaryBtn }}">+ Nuevo ritmista</button>
+        </div>
+        <div style="{{ s.filterRow }}">
+          <sc-for list="{{ naipeFilterChipsDb }}" as="f" hint-placeholder-count="8">
+            <button onClick="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+          <div style="{{ s.tableScroll }}">
+            <table style="{{ s.table }}">
+              <thead>
+                <tr>
+                  <th style="{{ s.th }}">N°</th>
+                  <th style="{{ s.th }}">Nombre y Apellido</th>
+                  <th style="{{ s.th }}">DNI</th>
+                  <th style="{{ s.th }}">Naipe (histórico)</th>
+                  <th style="{{ s.th }}">Talle de Remera</th>
+                  <th style="{{ s.th }}">Calzado</th>
+                  <th style="{{ s.thRight }}">Ediciones</th>
+                  <th style="{{ s.th }}"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ ritmistasDb }}" as="r" hint-placeholder-count="6">
+                  <tr style="{{ s.tr }}" onClick="{{ r.onOpen }}">
+                    <td style="{{ s.tdMuted }}">{{ r.n }}</td>
+                    <td style="{{ s.tdName }}">
+                      <div style="{{ s.nameCell }}">
+                        <div style="{{ s.avatarSm }}">{{ r.initials }}</div>
+                        <span style="{{ s.tdNameLink }}">{{ r.name }}</span>
+                      </div>
+                    </td>
+                    <td style="{{ s.td }}">{{ r.dni }}</td>
+                    <td style="{{ s.td }}">{{ r.naipeHistory }}</td>
+                    <td style="{{ s.td }}">{{ r.talleRemera }}</td>
+                    <td style="{{ s.td }}">{{ r.calzado }}</td>
+                    <td style="{{ s.tdRight }}">{{ r.editions }}</td>
+                    <td style="{{ s.tdChevron }}">›</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
+        <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ s.tableWrap }}">
+            <sc-for list="{{ ritmistasDb }}" as="r" hint-placeholder-count="6">
+              <div style="{{ s.tableRow }}" onClick="{{ r.onOpen }}">
+                <div style="{{ s.avatar }}">{{ r.initials }}</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-weight:600;font-size:14px;color:{{ c.text }};">{{ r.name }}</div>
+                  <div style="font-size:12px;color:{{ c.textMuted }};">{{ r.naipeHistory }}</div>
+                </div>
+                <div style="font-size:12px;color:{{ c.textMuted }};text-align:right;">{{ r.editions }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ showInventarioList }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.tabsRow }}">
+          <button onClick="{{ setInvTabInstrumentos }}" style="{{ inv.tabStyle.instrumentos }}">Instrumentos</button>
+          <button onClick="{{ setInvTabRepuestos }}" style="{{ inv.tabStyle.repuestos }}">Repuestos</button>
+        </div>
+
+        <div style="{{ s.grid4Sm }}">
+          <div style="{{ s.metricCardAccentSm }}"><div style="{{ s.metricLabelSm }}">Total en stock</div><div style="{{ s.metricValueSm }}">{{ inv.metrics.total }}</div></div>
+          <div style="{{ s.metricCardSm }}"><div style="{{ s.metricLabelSm }}">Necesidad urgente</div><div style="{{ s.metricValueSm }};color:{{ c.danger }};">{{ inv.metrics.urgente }}</div></div>
+          <div style="{{ s.metricCardSm }}"><div style="{{ s.metricLabelSm }}">Necesidad deseable</div><div style="{{ s.metricValueSm }};color:{{ c.warning }};">{{ inv.metrics.deseable }}</div></div>
+          <div style="{{ s.metricCardSm }}"><div style="{{ s.metricLabelSm }}">Para venta</div><div style="{{ s.metricValueSm }};color:{{ c.success }};">{{ inv.metrics.venta }}</div></div>
+        </div>
+
+        <div style="{{ s.card }};margin-bottom:16px;">
+          <div style="{{ s.equalizer }};height:14px;margin-bottom:12px;">
+            <sc-for list="{{ inv.chart.segments }}" as="seg" hint-placeholder-count="4">
+              <div style="{{ seg.style }}"></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <sc-for list="{{ inv.chart.legend }}" as="lg" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:{{ c.textMuted }};">
+                <span style="{{ lg.dotStyle }};width:8px;height:8px;border-radius:50%;display:inline-block;"></span>{{ lg.label }}
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+          <div style="{{ s.sectionLabel }};margin-bottom:0;">{{ inv.breakdownLabel }}</div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div style="{{ s.segmented }}">
+              <sc-for list="{{ inv.etiquetaToggle }}" as="t" hint-placeholder-count="3">
+                <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <button onClick="{{ inv.openAdd }}" style="{{ s.primaryBtn }}">{{ inv.addLabel }}</button>
+          </div>
+        </div>
+        <div style="{{ s.tableScroll }};margin-bottom:20px;">
+          <table style="{{ s.table }}">
+            <thead><tr>
+              <th style="{{ s.th }}">{{ inv.groupColLabel }}</th>
+              <th style="{{ s.thRight }}">Cantidad</th>
+              <th style="{{ s.th }}">Distribución</th>
+              <th style="{{ s.th }}"></th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{ inv.breakdown }}" as="b" hint-placeholder-count="7">
+                <tr style="{{ s.tr }}" onClick="{{ b.onOpen }}">
+                  <td style="{{ s.tdName }}"><span style="{{ s.tdNameLink }}">{{ b.name }}</span></td>
+                  <td style="{{ s.tdRight }}">{{ b.total }}</td>
+                  <td style="{{ s.td }};font-family:'Geist',sans-serif;font-weight:400;">
+                    <sc-if value="{{ b.chartSegments }}" hint-placeholder-val="{{ false }}">
+                      <div style="{{ s.equalizer }};height:8px;width:140px;">
+                        <sc-for list="{{ b.chartSegments }}" as="seg" hint-placeholder-count="4"><div style="{{ seg.style }}"></div></sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ !b.chartSegments }}" hint-placeholder-val="{{ false }}">{{ b.detail }}</sc-if>
+                  </td>
+                  <td style="{{ s.tdChevron }}">›</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showInventarioGroupFicha }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ closeGroupFicha }}" style="{{ s.backBtn }}">← Volver a Inventario</button>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap;">
+          <div style="{{ s.avatarLg }};background:{{ c.primarySoft }};color:{{ c.text }};font-size:14px;">{{ groupFicha.initials }}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:800;font-size:20px;color:{{ c.text }};">{{ groupFicha.name }}</div>
+            <div style="font-size:13px;color:{{ c.textMuted }};">{{ groupFicha.subtitle }}</div>
+          </div>
+          <button onClick="{{ groupFicha.onAdd }}" style="{{ s.primaryBtn }}">{{ groupFicha.addLabel }}</button>
+        </div>
+        <div style="{{ s.grid3 }}">
+          <div style="{{ s.card }};background:{{ c.primarySoft }};border:none;">
+            <div style="font-size:12px;font-weight:600;color:{{ c.text }};margin-bottom:6px;">Total en stock</div>
+            <div style="{{ s.mono }};font-size:28px;font-weight:600;color:{{ c.text }};">{{ groupFicha.total }}</div>
+          </div>
+          <sc-for list="{{ groupFicha.metricCards }}" as="m" hint-placeholder-count="3">
+            <div style="{{ s.card }}">
+              <div style="font-size:12px;font-weight:600;color:{{ c.textMuted }};margin-bottom:6px;">{{ m.label }}</div>
+              <div style="{{ s.mono }};font-size:28px;font-weight:600;color:{{ m.color }};">{{ m.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="{{ s.sectionLabel }}">Variantes en stock</div>
+        <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+          <div style="{{ s.tableScroll }}">
+            <table style="{{ s.table }}">
+              <thead><tr>
+                <sc-for list="{{ groupFicha.cols }}" as="col" hint-placeholder-count="6"><th style="{{ col.right }}">{{ col.label }}</th></sc-for>
+                <th style="{{ s.th }}"></th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{ groupFicha.rows }}" as="i" hint-placeholder-count="4">
+                  <tr style="{{ s.tr }}">
+                    <sc-if value="{{ groupFicha.isInstrumentos }}" hint-placeholder-val="{{ true }}">
+                      <td style="{{ s.tdName }}">{{ i.marcaLabel }}</td>
+                      <td style="{{ s.td }}">{{ i.pulgadasLabel }}</td>
+                      <td style="{{ s.td }}">{{ i.tipoCaixaLabel }}</td>
+                      <td style="{{ s.tdBadgeCell }}"><span style="{{ i.estadoStyle }}">{{ i.estado }}</span></td>
+                    </sc-if>
+                    <sc-if value="{{ !groupFicha.isInstrumentos }}" hint-placeholder-val="{{ false }}">
+                      <td style="{{ s.tdName }}">{{ i.descripcion }}</td>
+                    </sc-if>
+                    <td style="{{ s.tdRight }}">{{ i.cantidad }}</td>
+                    <td style="{{ s.tdBadgeCell }}"><sc-if value="{{ i.etiqueta }}" hint-placeholder-val="{{ false }}"><span style="{{ i.etiquetaStyle }}">{{ i.etiquetaLabel }}</span></sc-if></td>
+                    <td style="{{ s.tdActions }}">
+                      <button onClick="{{ i.onEdit }}" style="{{ s.iconBtnSm }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+                      <button onClick="{{ i.onDelete }}" style="{{ s.iconBtnSmDanger }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M19 6l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+                    </td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
+        <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ s.tableWrap }}">
+            <sc-for list="{{ groupFicha.rows }}" as="i" hint-placeholder-count="4">
+              <div style="{{ s.invCard }}">
+                <div style="{{ s.invCardHeader }}">
+                  <div style="{{ s.invCardTitle }}">{{ i.cardTitle }}</div>
+                  <div style="{{ s.invCardActions }}">
+                    <button onClick="{{ i.onEdit }}" style="{{ s.iconBtnSm }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></button>
+                    <button onClick="{{ i.onDelete }}" style="{{ s.iconBtnSmDanger }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M19 6l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <sc-if value="{{ groupFicha.isInstrumentos }}" hint-placeholder-val="{{ true }}"><span style="{{ i.estadoStyle }}">{{ i.estado }}</span></sc-if>
+                  <sc-if value="{{ i.etiqueta }}" hint-placeholder-val="{{ false }}"><span style="{{ i.etiquetaStyle }}">{{ i.etiquetaLabel }}</span></sc-if>
+                </div>
+                <div style="{{ s.invCardMeta }}">Cantidad: {{ i.cantidad }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ section === 'dashboard' }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.grid4 }}">
+          <div style="{{ s.metricCard }}"><div style="{{ s.metricLabel }}">Ritmistas activos</div><div style="{{ s.metricValue }}">180</div></div>
+          <div style="{{ s.metricCardAccent }}"><div style="{{ s.metricLabelAccent }}">Saldo de caja</div><div style="{{ s.metricValueAccent }}">$412.000</div></div>
+          <div style="{{ s.metricCard }}"><div style="{{ s.metricLabel }}">Deuda total</div><div style="{{ s.metricValue }}">$88.500</div></div>
+          <div style="{{ s.metricCard }}"><div style="{{ s.metricLabel }}">Próximo evento</div><div style="font-size:16px;font-weight:600;color:{{ c.text }};">Ensayo general</div><div style="font-size:12px;color:{{ c.textMuted }};">sáb. 14 · 18:00</div></div>
+        </div>
+        <div style="{{ s.sectionLabel }}">Estado por naipe</div>
+        <div style="{{ s.grid3 }}">
+          <sc-for list="{{ naipeStatusCards }}" as="n" hint-placeholder-count="7">
+            <div style="{{ s.card }}">
+              <div style="font-weight:600;font-size:13px;color:{{ c.text }};margin-bottom:10px;">{{ n.name }}</div>
+              <div style="{{ s.equalizer }}">
+                <div style="{{ n.confirmedBar }}"></div>
+                <div style="{{ n.dudaBar }}"></div>
+                <div style="{{ n.noBar }}"></div>
+              </div>
+              <div style="font-size:11px;color:{{ c.textMuted }};margin-top:8px;">{{ n.summary }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showRitmistasEd }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:flex-start;justify-content:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button onClick="{{ filterPendientes }}" style="{{ s.secondaryBtn }}">Pendientes</button>
+            <button style="{{ s.secondaryBtn }}">Importar ritmistas</button>
+            <button style="{{ s.secondaryBtn }}">+ Registrar pago</button>
+            <button onClick="{{ openAddRitmista }}" style="{{ s.primaryBtn }}">+ Agregar ritmista</button>
+          </div>
+        </div>
+
+        <div style="{{ s.grid3 }};margin-bottom:16px;">
+          <div style="{{ s.metricCard }}"><div style="{{ s.metricLabel }}">Ritmistas totales</div><div style="{{ s.metricValue }}">{{ ritmistasStats.total }}</div></div>
+          <div style="{{ s.metricCard }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <button onClick="{{ prevNaipeStat }}" style="{{ s.editionArrow }}">‹</button>
+              <div style="{{ s.metricLabel }};margin-bottom:0;">{{ ritmistasStats.naipeStatName }}</div>
+              <button onClick="{{ nextNaipeStat }}" style="{{ s.editionArrow }}">›</button>
+            </div>
+            <div style="{{ s.metricValue }};text-align:center;">{{ ritmistasStats.naipeStatCount }}</div>
+          </div>
+          <div style="{{ s.metricCard }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <button onClick="{{ prevEstadoStat }}" style="{{ s.editionArrow }}">‹</button>
+              <div style="{{ s.metricLabel }};margin-bottom:0;">{{ ritmistasStats.estadoStatName }}</div>
+              <button onClick="{{ nextEstadoStat }}" style="{{ s.editionArrow }}">›</button>
+            </div>
+            <div style="{{ s.metricValue }};text-align:center;color:{{ ritmistasStats.estadoStatColor }};">{{ ritmistasStats.estadoStatCount }}</div>
+          </div>
+        </div>
+
+        <div style="{{ s.searchRow }}">
+          <input placeholder="Filtrar ritmistas..." style="{{ s.searchInput }}"/>
+          <select style="{{ s.formInput }};max-width:190px;">
+            <option>Todos los estados</option>
+            <option>Confirmado</option>
+            <option>En duda</option>
+            <option>No confirmado</option>
+          </select>
+          <button style="{{ s.secondaryBtn }}">Filtros</button>
+          <div style="flex:1;"></div>
+          <button style="{{ s.secondaryBtn }}">Exportar / Imprimir ⭳</button>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <select value="{{ estadoFilterEd }}" onChange="{{ onEstadoFilterEdChange }}" style="{{ s.formInput }};max-width:180px;">
+            <option>Todos los estados</option>
+            <option>Confirmado</option>
+            <option>En duda</option>
+            <option>No confirmado</option>
+          </select>
+          <sc-for list="{{ naipeFilterChipsEd }}" as="f" hint-placeholder-count="8">
+            <button onClick="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+          <div style="{{ s.tableScroll }}">
+            <table style="{{ s.table }}">
+              <thead>
+                <tr>
+                  <th style="{{ s.th }}">ID</th>
+                  <th style="{{ s.th }}">Nombre</th>
+                  <th style="{{ s.th }}">DNI</th>
+                  <th style="{{ s.th }}">Contacto</th>
+                  <th style="{{ s.th }}">Naipe esta edición</th>
+                  <th style="{{ s.thRight }}">Estado</th>
+                  <th style="{{ s.th }}"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ ritmistasEd }}" as="r" hint-placeholder-count="6">
+                  <tr style="{{ s.tr }}" onClick="{{ r.onOpen }}">
+                    <td style="{{ s.tdMuted }}">{{ r.rid }}</td>
+                    <td style="{{ s.tdName }}">
+                      <div style="{{ s.nameCell }}">
+                        <div style="{{ s.avatarSm }}">{{ r.initials }}</div>
+                        <span style="{{ s.tdNameLink }}">{{ r.name }}</span>
+                      </div>
+                    </td>
+                    <td style="{{ s.td }}">{{ r.dni }}</td>
+                    <td style="{{ s.td }}">
+                      <div style="display:flex;gap:6px;">
+                        <a href="{{ r.waLink }}" target="_blank" onClick="{{ stopClick }}" style="{{ s.waIcon }}">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2 22l5.06-1.33A9.93 9.93 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 18c-1.6 0-3.1-.43-4.4-1.2l-.31-.19-3 .79.8-2.93-.2-.3A7.94 7.94 0 014 12c0-4.42 3.58-8 8-8s8 3.58 8 8-3.58 8-8 8zm4.4-5.9c-.24-.12-1.43-.7-1.65-.78-.22-.08-.38-.12-.55.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1-.37-1.9-1.17-.7-.62-1.17-1.4-1.31-1.63-.14-.24-.02-.37.1-.5.11-.12.24-.3.36-.46.12-.16.16-.27.24-.45.08-.18.04-.33-.04-.45-.08-.12-.5-1.2-.68-1.63-.18-.42-.36-.36-.5-.36-.13 0-.28-.02-.43-.02s-.4.06-.6.3c-.2.24-.78.76-.78 1.85s.8 2.15 1.9 3.4c1.4 1.6 2.6 2.16 3.8 2.5.32.08.6.06.83-.04.24-.1.7-.33 1.14-.66.44-.34.44-.63.32-.87-.12-.24-.4-.36-.63-.48z"/></svg>
+                        </a>
+                        <a href="{{ r.mailLink }}" onClick="{{ stopClick }}" style="{{ s.mailIcon }}">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M4 6l8 7 8-7"/></svg>
+                        </a>
+                      </div>
+                    </td>
+                    <td style="{{ s.td }};font-family:'Geist',sans-serif;font-weight:500;font-size:13px;">{{ r.naipe }}</td>
+                    <td style="{{ s.tdRight }}"><span style="{{ r.statusStyle }}">{{ r.status }}</span></td>
+                    <td style="{{ s.tdChevron }}">›</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </sc-if>
+        <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ s.tableWrap }}">
+            <sc-for list="{{ ritmistasEd }}" as="r" hint-placeholder-count="6">
+              <div style="{{ s.tableRow }}" onClick="{{ r.onOpen }}">
+                <div style="{{ s.avatar }}">{{ r.initials }}</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-weight:600;font-size:14px;color:{{ c.text }};">{{ r.name }}</div>
+                  <div style="font-size:12px;color:{{ c.textMuted }};">{{ r.naipe }}</div>
+                </div>
+                <div style="{{ r.statusStyle }}">{{ r.status }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ fichaOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <button onClick="{{ closeFicha }}" style="{{ s.backBtn }};margin-bottom:0;">← Volver</button>
+          <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ startEditFicha }}" style="{{ s.secondaryBtn }}">Editar</button>
+          </sc-if>
+          <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:8px;">
+              <button onClick="{{ cancelEditFicha }}" style="{{ s.secondaryBtn }}">Cancelar</button>
+              <button onClick="{{ saveFicha }}" style="{{ s.primaryBtn }}">Guardar</button>
+            </div>
+          </sc-if>
+        </div>
+        <div style="{{ s.fichaGrid }}">
+          <div style="{{ s.fichaColStack }}">
+            <div style="{{ s.card }}">
+              <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+                <div style="{{ s.avatarLg }}">{{ ficha.initials }}</div>
+                <div style="min-width:0;flex:1;">
+                  <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}">
+                    <div style="font-weight:800;font-size:18px;color:{{ c.text }};">{{ ficha.name }}</div>
+                  </sc-if>
+                  <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}">
+                    <input value="{{ draft.name }}" onChange="{{ onDraftName }}" style="{{ s.formInput }}"/>
+                  </sc-if>
+                  <span style="{{ ficha.statusStyle }}">{{ ficha.status }}</span>
+                </div>
+              </div>
+
+              <div style="{{ s.modalLabel }}">DNI</div>
+              <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}"><div style="{{ s.modalValue }};margin-bottom:14px;">{{ ficha.dni }}</div></sc-if>
+              <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}"><input value="{{ draft.dni }}" onChange="{{ onDraftDni }}" style="{{ s.formInput }};margin-bottom:14px;"/></sc-if>
+
+              <div style="{{ s.modalLabel }}">Teléfono</div>
+              <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}"><div style="{{ s.modalValue }};margin-bottom:14px;">{{ ficha.telefono }}</div></sc-if>
+              <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}"><input value="{{ draft.telefono }}" onChange="{{ onDraftTelefono }}" style="{{ s.formInput }};margin-bottom:14px;"/></sc-if>
+
+              <div style="{{ s.modalLabel }}">Fecha de nacimiento</div>
+              <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}"><div style="{{ s.modalValue }};margin-bottom:14px;">{{ ficha.nacimiento }} · {{ ficha.edad }} años</div></sc-if>
+              <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}"><input type="date" value="{{ draft.nacimientoIso }}" onChange="{{ onDraftNacimiento }}" style="{{ s.formInput }};margin-bottom:14px;"/></sc-if>
+
+              <div style="{{ s.formRow2 }};">
+                <div>
+                  <div style="{{ s.modalLabel }}">Talle de remera</div>
+                  <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}"><div style="{{ s.modalValue }}">{{ ficha.talleRemera }}</div></sc-if>
+                  <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}"><input value="{{ draft.talleRemera }}" onChange="{{ onDraftTalle }}" style="{{ s.formInput }}"/></sc-if>
+                </div>
+                <div>
+                  <div style="{{ s.modalLabel }}">Calzado</div>
+                  <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}"><div style="{{ s.modalValue }}">{{ ficha.calzado }}</div></sc-if>
+                  <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}"><input value="{{ draft.calzado }}" onChange="{{ onDraftCalzado }}" style="{{ s.formInput }}"/></sc-if>
+                </div>
+              </div>
+            </div>
+
+            <div style="{{ s.card }}">
+              <div style="{{ s.sectionLabel }}">Naipe actual</div>
+              <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}"><div style="{{ s.modalValue }};margin-bottom:16px;">{{ ficha.naipeLabel }}</div></sc-if>
+              <sc-if value="{{ editingFicha && ficha.isEdition }}" hint-placeholder-val="{{ false }}"><input value="{{ draft.naipe }}" onChange="{{ onDraftNaipe }}" style="{{ s.formInput }};margin-bottom:16px;"/></sc-if>
+              <div style="{{ s.sectionLabel }}">Historial — qué tocó antes</div>
+              <div style="font-size:13px;line-height:1.7;color:{{ c.textMuted }};margin-bottom:12px;">{{ ficha.historialTexto }}</div>
+              <sc-if value="{{ ficha.timeline.length }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ s.tableWrap }}">
+                  <sc-for list="{{ ficha.timeline }}" as="t" hint-placeholder-count="3">
+                    <div style="{{ s.tableRow }};cursor:default;">
+                      <div style="{{ s.mono }};font-weight:600;font-size:13px;color:{{ c.text }};min-width:70px;">{{ t.year }}</div>
+                      <div style="flex:1;font-size:13px;color:{{ c.text }};">{{ t.naipe }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <div style="{{ s.fichaColMain }}">
+            <div style="{{ s.balanceBanner }}">
+              <div style="{{ s.balanceLabel }}">Saldo pendiente — indumentaria</div>
+              <div style="{{ s.balanceValue }}">{{ ficha.pendiente }}</div>
+              <div style="{{ s.balanceSub }}">Total {{ ficha.total }} · Pagado {{ ficha.pagado }}</div>
+            </div>
+
+            <div style="{{ s.tabsRow }}">
+              <button onClick="{{ setTabIndumentaria }}" style="{{ ficha.tabStyle.indumentaria }}">Indumentaria</button>
+              <button onClick="{{ setTabRifas }}" style="{{ ficha.tabStyle.rifas }}">Beneficios</button>
+            </div>
+
+            <sc-if value="{{ showTabIndumentaria }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ s.tableWrap }};margin-bottom:16px;">
+                  <sc-for list="{{ ficha.indumentaria }}" as="it" hint-placeholder-count="3">
+                    <div style="{{ s.tableRow }};cursor:default;">
+                      <div style="flex:1;font-size:14px;color:{{ c.text }};font-weight:600;">{{ it.item }}</div>
+                      <div style="{{ s.mono }};font-size:13px;color:{{ c.textMuted }};">{{ it.entregado }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ ficha.isEdition }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ s.formRow2 }}">
+                  <div>
+                    <div style="{{ s.modalLabel }}">Total traje</div>
+                    <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}"><div style="{{ s.modalValue }}">{{ ficha.total }}</div></sc-if>
+                    <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}"><input value="{{ draft.total }}" onChange="{{ onDraftTotal }}" style="{{ s.formInput }}"/></sc-if>
+                  </div>
+                  <div>
+                    <div style="{{ s.modalLabel }}">Pagado</div>
+                    <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}"><div style="{{ s.modalValue }}">{{ ficha.pagado }}</div></sc-if>
+                    <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}"><input value="{{ draft.pagado }}" onChange="{{ onDraftPagado }}" style="{{ s.formInput }}"/></sc-if>
+                  </div>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ showTabRifas }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ s.grid3 }}">
+                <div style="{{ s.card }}">
+                  <div style="{{ s.metricLabel }}">Beneficios asignados</div>
+                  <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}"><div style="{{ s.metricValue }}">{{ ficha.rifasAsignadas }}</div></sc-if>
+                  <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}"><input value="{{ draft.rifasAsignadas }}" onChange="{{ onDraftRifasAsignadas }}" style="{{ s.formInput }}"/></sc-if>
+                </div>
+                <div style="{{ s.card }}">
+                  <div style="{{ s.metricLabel }}">Vendidos</div>
+                  <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}"><div style="{{ s.metricValue }}">{{ ficha.rifasVendidas }}</div></sc-if>
+                  <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}"><input value="{{ draft.rifasVendidas }}" onChange="{{ onDraftRifasVendidas }}" style="{{ s.formInput }}"/></sc-if>
+                </div>
+                <div style="{{ s.card }}">
+                  <div style="{{ s.metricLabel }}">Rendido</div>
+                  <sc-if value="{{ !editingFicha }}" hint-placeholder-val="{{ true }}"><div style="{{ s.metricValue }}">{{ ficha.rifasRendido }}</div></sc-if>
+                  <sc-if value="{{ editingFicha }}" hint-placeholder-val="{{ false }}"><input value="{{ draft.rifasRendido }}" onChange="{{ onDraftRifasRendido }}" style="{{ s.formInput }}"/></sc-if>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ addRitmistaOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.modalOverlay }}" onClick="{{ closeAddRitmista }}">
+          <div style="{{ s.addModalCard }}" onClick="{{ stopClick }}">
+            <div style="{{ s.modalHeader }}">
+              <div style="font-weight:800;font-size:18px;color:{{ c.text }};flex:1;">Nuevo ritmista</div>
+              <button onClick="{{ closeAddRitmista }}" style="{{ s.modalClose }}">✕</button>
+            </div>
+            <div style="{{ s.formField }}"><label style="{{ s.formLabel }}">Nombre y apellido</label><input style="{{ s.formInput }}" placeholder="Ej. Martina Paredes"/></div>
+            <div style="{{ s.formRow2 }};margin-bottom:14px;">
+              <div><label style="{{ s.formLabel }}">DNI</label><input style="{{ s.formInput }}" placeholder="00.000.000"/></div>
+              <div><label style="{{ s.formLabel }}">Teléfono</label><input style="{{ s.formInput }}" placeholder="341 000 0000"/></div>
+            </div>
+            <div style="{{ s.formField }}"><label style="{{ s.formLabel }}">Fecha de nacimiento</label><input type="date" style="{{ s.formInput }}"/></div>
+            <div style="{{ s.formField }}">
+              <label style="{{ s.formLabel }}">Instrumento</label>
+              <select value="{{ newNaipe }}" onChange="{{ onNewNaipeChange }}" style="{{ s.formInput }}">
+                <sc-for list="{{ naipeOptions }}" as="opt" hint-placeholder-count="7"><option>{{ opt }}</option></sc-for>
+              </select>
+            </div>
+            <sc-if value="{{ newSubtipoOptions.length }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ s.formField }}">
+                <label style="{{ s.formLabel }}">Subcategoría</label>
+                <select style="{{ s.formInput }}">
+                  <sc-for list="{{ newSubtipoOptions }}" as="opt" hint-placeholder-count="3"><option>{{ opt }}</option></sc-for>
+                </select>
+              </div>
+            </sc-if>
+            <div style="{{ s.formRow2 }};margin-bottom:14px;">
+              <div><label style="{{ s.formLabel }}">Talle de remera</label><input style="{{ s.formInput }}" placeholder="M"/></div>
+              <div><label style="{{ s.formLabel }}">Calzado</label><input style="{{ s.formInput }}" placeholder="38"/></div>
+            </div>
+            <div style="{{ s.modalActions }}">
+              <button onClick="{{ closeAddRitmista }}" style="{{ s.secondaryBtn }};flex:1;">Cancelar</button>
+              <button onClick="{{ closeAddRitmista }}" style="{{ s.primaryBtn }};flex:1;">Guardar ritmista</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ instrumentoDialogOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.modalOverlay }}" onClick="{{ closeInstrumentoDialog }}">
+          <div style="{{ s.wideModalCard }}" onClick="{{ stopClick }}">
+            <div style="{{ s.wideModalHeader }}">
+              <div style="{{ s.wideModalIcon }}">IN</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:800;font-size:17px;color:{{ c.text }};">{{ instDialogTitle }}</div>
+                <div style="{{ s.wideModalSubtitle }}">Instrumento del padrón de inventario</div>
+              </div>
+              <button onClick="{{ closeInstrumentoDialog }}" style="{{ s.modalClose }}">✕</button>
+            </div>
+            <div style="{{ s.wideModalBody }}">
+              <div style="{{ s.formSectionLabelFirst }}">Identificación</div>
+              <div style="{{ s.formField }};{{ s.comboInputWrap }}">
+                <label style="{{ s.formLabel }}">Tipo de instrumento</label>
+                <input value="{{ draftInst.tipo }}" onChange="{{ onTipoInputChange }}" onFocus="{{ onTipoFocus }}" placeholder="Buscar o crear tipo…" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}"/>
+                <span style="{{ s.comboChevron }}">▾</span>
+                <sc-if value="{{ tipoComboOpen }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ s.comboDropdown }}">
+                    <sc-for list="{{ tipoComboOptions }}" as="opt" hint-placeholder-count="7">
+                      <button onClick="{{ opt.onClick }}" style="{{ s.comboOption }}" style-hover="{{ s.comboOptionHover }}">{{ opt.label }}</button>
+                    </sc-for>
+                    <sc-if value="{{ tipoComboShowCreate }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ onCreateTipo }}" style="{{ s.comboOptionCreate }}" style-hover="{{ s.comboOptionHover }}">+ Crear "{{ draftInst.tipo }}"</button>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
+              <sc-if value="{{ draftInst.tipo === 'Caixa' }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ s.formField }}">
+                  <label style="{{ s.formLabel }}">Tipo de caixa</label>
+                  <select value="{{ draftInst.tipoCaixa }}" onChange="{{ onDraftInstTipoCaixa }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}">
+                    <option>Vazada</option>
+                    <option>Con cilindro</option>
+                  </select>
+                </div>
+              </sc-if>
+              <div style="{{ s.formRow2 }}">
+                <div><label style="{{ s.formLabel }}">Marca</label><input value="{{ draftInst.marca }}" onChange="{{ onDraftInstMarca }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}" placeholder="Opcional"/></div>
+                <div><label style="{{ s.formLabel }}">Pulgadas / tamaño</label><input value="{{ draftInst.pulgadas }}" onChange="{{ onDraftInstPulgadas }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}" placeholder="Ej. 14&quot;"/></div>
+              </div>
+
+              <div style="{{ s.formSectionLabel }}">Stock</div>
+              <div style="{{ s.formRow2 }}">
+                <div>
+                  <label style="{{ s.formLabel }}">Estado</label>
+                  <select value="{{ draftInst.estado }}" onChange="{{ onDraftInstEstado }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}">
+                    <option>Bueno</option>
+                    <option>Regular</option>
+                    <option>Necesita reparación</option>
+                    <option>De baja</option>
+                  </select>
+                </div>
+                <div><label style="{{ s.formLabel }}">Cantidad</label><input type="number" min="0" value="{{ draftInst.cantidad }}" onChange="{{ onDraftInstCantidad }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}"/></div>
+              </div>
+
+              <div style="{{ s.formSectionLabel }}">Etiqueta</div>
+              <div style="{{ s.formField }}">
+                <label style="{{ s.formLabel }}">Etiqueta</label>
+                <select value="{{ draftInst.etiqueta }}" onChange="{{ onDraftInstEtiqueta }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}">
+                  <option>Sin etiqueta</option>
+                  <option>Necesidad</option>
+                  <option>Para venta</option>
+                </select>
+              </div>
+              <sc-if value="{{ draftInst.etiqueta === 'Necesidad' }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ s.formField }}">
+                  <label style="{{ s.formLabel }}">Prioridad</label>
+                  <select value="{{ draftInst.prioridad }}" onChange="{{ onDraftInstPrioridad }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}">
+                    <option>Urgente</option>
+                    <option>Deseable</option>
+                  </select>
+                </div>
+              </sc-if>
+            </div>
+            <div style="{{ s.wideModalFooter }}">
+              <button onClick="{{ closeInstrumentoDialog }}" style="{{ s.secondaryBtn }};flex:1;">Cancelar</button>
+              <button onClick="{{ saveInstrumento }}" style="{{ s.primaryBtn }};flex:1;">Guardar instrumento</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ repuestoDialogOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.modalOverlay }}" onClick="{{ closeRepuestoDialog }}">
+          <div style="{{ s.wideModalCard }}" onClick="{{ stopClick }}">
+            <div style="{{ s.wideModalHeader }}">
+              <div style="{{ s.wideModalIcon }}">RP</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-weight:800;font-size:17px;color:{{ c.text }};">{{ repDialogTitle }}</div>
+                <div style="{{ s.wideModalSubtitle }}">Repuesto del padrón de inventario</div>
+              </div>
+              <button onClick="{{ closeRepuestoDialog }}" style="{{ s.modalClose }}">✕</button>
+            </div>
+            <div style="{{ s.wideModalBody }}">
+              <div style="{{ s.formSectionLabelFirst }}">Identificación</div>
+              <div style="{{ s.formField }}">
+                <label style="{{ s.formLabel }}">Categoría</label>
+                <select value="{{ draftRep.categoria }}" onChange="{{ onDraftRepCategoria }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}">
+                  <option>Cueros</option>
+                  <option>Bordonas</option>
+                  <option>Otro</option>
+                </select>
+              </div>
+              <div style="{{ s.formField }}"><label style="{{ s.formLabel }}">Descripción</label><input value="{{ draftRep.descripcion }}" onChange="{{ onDraftRepDescripcion }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}" placeholder="Ej. Cuero cabra 14&quot;"/></div>
+
+              <div style="{{ s.formSectionLabel }}">Stock</div>
+              <div style="{{ s.formField }}"><label style="{{ s.formLabel }}">Cantidad</label><input type="number" min="0" value="{{ draftRep.cantidad }}" onChange="{{ onDraftRepCantidad }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}"/></div>
+
+              <div style="{{ s.formSectionLabel }}">Etiqueta</div>
+              <div style="{{ s.formField }}">
+                <label style="{{ s.formLabel }}">Etiqueta</label>
+                <select value="{{ draftRep.etiqueta }}" onChange="{{ onDraftRepEtiqueta }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}">
+                  <option>Sin etiqueta</option>
+                  <option>Necesidad</option>
+                  <option>Para venta</option>
+                </select>
+              </div>
+              <sc-if value="{{ draftRep.etiqueta === 'Necesidad' }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ s.formField }}">
+                  <label style="{{ s.formLabel }}">Prioridad</label>
+                  <select value="{{ draftRep.prioridad }}" onChange="{{ onDraftRepPrioridad }}" style="{{ s.formInput }}" style-focus="{{ s.formInputFocus }}">
+                    <option>Urgente</option>
+                    <option>Deseable</option>
+                  </select>
+                </div>
+              </sc-if>
+            </div>
+            <div style="{{ s.wideModalFooter }}">
+              <button onClick="{{ closeRepuestoDialog }}" style="{{ s.secondaryBtn }};flex:1;">Cancelar</button>
+              <button onClick="{{ saveRepuesto }}" style="{{ s.primaryBtn }};flex:1;">Guardar repuesto</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ section === 'presupuesto' }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.grid4 }}">
+          <div style="{{ s.metricCardAccent }}"><div style="{{ s.metricLabelAccent }}">Caja general</div><div style="{{ s.metricValueAccent }}">$412.000</div></div>
+          <div style="{{ s.metricCard }}"><div style="{{ s.metricLabel }}">Presupuesto proyectado</div><div style="{{ s.metricValue }}">$680.000</div></div>
+          <div style="{{ s.metricCard }}"><div style="{{ s.metricLabel }}">Rifas vendidas</div><div style="{{ s.metricValue }}">142</div></div>
+        </div>
+        <div style="{{ s.sectionLabel }}">Prioridades del presupuesto</div>
+        <div style="{{ s.tableWrap }}">
+          <sc-for list="{{ presupuestoItems }}" as="p" hint-placeholder-count="4">
+            <div style="{{ s.tableRow }}">
+              <div style="flex:1;"><div style="font-weight:600;font-size:14px;color:{{ c.text }};">{{ p.name }}</div><div style="font-size:12px;color:{{ c.textMuted }};">{{ p.prioridad }}</div></div>
+              <div style="{{ s.mono }};font-weight:600;font-size:14px;color:{{ c.text }};">{{ p.monto }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ section === 'agenda' }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.agendaGrid }}">
+          <sc-for list="{{ calendarDays }}" as="d" hint-placeholder-count="35">
+            <div style="{{ d.cellStyle }}">
+              <div style="{{ d.numStyle }}">{{ d.num }}</div>
+              <sc-if value="{{ d.event }}" hint-placeholder-val="{{ false }}"><div style="{{ d.eventStyle }}">{{ d.event }}</div></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ section === 'config' }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.card }};max-width:480px;margin-bottom:16px;">
+          <div style="font-weight:600;font-size:14px;color:{{ c.text }};margin-bottom:4px;">Nombre de la batería</div>
+          <input value="{{ batteryName }}" onChange="{{ onNameChange }}" style="{{ s.searchInput }};margin-top:8px;"/>
+        </div>
+        <div style="{{ s.card }};max-width:480px;margin-bottom:16px;">
+          <div style="font-weight:600;font-size:14px;color:{{ c.text }};margin-bottom:12px;">Logo de la batería</div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="{{ s.logoPreview }}">
+<div style="{{ logoImgStyleConfig }}"></div>
+              <svg width="40" height="40" viewBox="0 0 40 40" style="{{ logoSvgStyle }}"><circle cx="20" cy="20" r="16" fill="none" style="stroke:{{ c.primary }}" stroke-width="1.6"/><g style="stroke:{{ c.primary }}" stroke-width="1.1"><line x1="10" y1="15" x2="30" y2="15.6"/><line x1="10" y1="19" x2="30" y2="19.6"/><line x1="10" y1="23" x2="30" y2="23.6"/></g></svg>
+            </div>
+            <div>
+              <input type="file" accept="image/*" ref="{{ fileInputRef }}" onChange="{{ onLogoUpload }}" style="display:none;"/>
+              <button onClick="{{ triggerFileUpload }}" style="{{ s.secondaryBtn }}">Subir logo</button>
+              <sc-if value="{{ hasLogo }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ clearLogo }}" style="{{ s.textBtn }}">Quitar</button>
+              </sc-if>
+              <div style="font-size:12px;color:{{ c.textMuted }};margin-top:8px;">PNG o SVG monocromático recomendado.</div>
+            </div>
+          </div>
+        </div>
+        <div style="{{ s.card }};max-width:480px;">
+          <div style="font-weight:600;font-size:14px;color:{{ c.text }};margin-bottom:4px;">Color de la batería</div>
+          <div style="font-size:12px;color:{{ c.textMuted }};margin-bottom:14px;">Este color se usa en el logo, botones y acentos. La interfaz permanece neutra en blanco y negro.</div>
+          <div style="{{ s.colorGrid }}">
+            <sc-for list="{{ colorOptions }}" as="opt" hint-placeholder-count="8">
+              <button onClick="{{ opt.onClick }}" style="{{ opt.swatchStyle }}"></button>
+            </sc-for>
+            <label style="{{ s.customSwatchWrap }}">
+              <input type="color" value="{{ primaryColor }}" onChange="{{ onCustomColor }}" style="{{ s.customColorInput }}"/>
+              <span style="font-size:11px;color:{{ c.textMuted }};">+ Personalizado</span>
+            </label>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <sc-if value="{{ !isDesktop }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.bottomNav }}">
+      <sc-for list="{{ bottomNavItems }}" as="b" hint-placeholder-count="4">
+        <button onClick="{{ b.onClick }}" style="{{ b.style }}">
+          <span dangerouslySetInnerHTML="{{ b.iconHtml }}"></span>
+          <span style="font-size:11px;">{{ b.label }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    isDesktop: typeof window !== 'undefined' ? window.innerWidth >= 900 : true,
+    darkMode: false,
+    primaryColor: '#00723F',
+    batteryName: 'Zum Zum',
+    logoDataUrl: null,
+    module: 'carnaval',
+    section: 'dashboard',
+    edition: 2026,
+    showColorPicker: false,
+    fichaOpen: null,
+    naipeFilterDb: 'Todos',
+    naipeFilterEd: 'Todos',
+    estadoFilterEd: 'Todos',
+    addRitmistaOpen: false,
+    fichaTab: 'indumentaria',
+    newNaipe: 'Caixas',
+    naipeStatIndex: 0,
+    estadoStatIndex: 0,
+    editingFicha: false,
+    draft: {},
+    inventarioTab: 'instrumentos',
+    invTipoFilter: 'Todos',
+    invEtiquetaFilter: 'Todos',
+    customTipos: [],
+    instrumentoDialogOpen: null,
+    repuestoDialogOpen: null,
+    invGroupFicha: null,
+    draftInst: {},
+    draftRep: {},
+    tipoComboOpen: false,
+    instrumentosRaw: [
+      { id: 1, tipo: 'Caixa', marca: 'Contemporânea', pulgadas: '14"', tipoCaixa: 'Con cilindro', estado: 'Bueno', cantidad: 60, etiqueta: 'Sin etiqueta', prioridad: 'Urgente' },
+      { id: 2, tipo: 'Caixa', marca: '', pulgadas: '12"', tipoCaixa: 'Vazada', estado: 'Regular', cantidad: 20, etiqueta: 'Necesidad', prioridad: 'Deseable' },
+      { id: 3, tipo: 'Repique', marca: 'RMV', pulgadas: '12"', tipoCaixa: '', estado: 'Bueno', cantidad: 45, etiqueta: 'Sin etiqueta', prioridad: 'Urgente' },
+      { id: 4, tipo: 'Surdo', marca: 'Renner', pulgadas: '3ra', tipoCaixa: '', estado: 'Necesita reparación', cantidad: 15, etiqueta: 'Necesidad', prioridad: 'Urgente' },
+      { id: 5, tipo: 'Surdo', marca: '', pulgadas: '1ra', tipoCaixa: '', estado: 'De baja', cantidad: 4, etiqueta: 'Para venta', prioridad: 'Urgente' },
+      { id: 6, tipo: 'Tamborim', marca: 'RMV', pulgadas: '', tipoCaixa: '', estado: 'Bueno', cantidad: 50, etiqueta: 'Sin etiqueta', prioridad: 'Urgente' },
+      { id: 7, tipo: 'Chocalho', marca: '', pulgadas: '', tipoCaixa: '', estado: 'Regular', cantidad: 30, etiqueta: 'Necesidad', prioridad: 'Deseable' },
+      { id: 8, tipo: 'Cuica', marca: '', pulgadas: '', tipoCaixa: '', estado: 'Necesita reparación', cantidad: 8, etiqueta: 'Necesidad', prioridad: 'Urgente' },
+      { id: 9, tipo: 'Agogô', marca: '', pulgadas: '', tipoCaixa: '', estado: 'Bueno', cantidad: 6, etiqueta: 'Sin etiqueta', prioridad: 'Urgente' }
+    ],
+    repuestosRaw: [
+      { id: 1, categoria: 'Cueros', descripcion: 'Cuero cabra 14"', cantidad: 6, etiqueta: 'Necesidad', prioridad: 'Urgente' },
+      { id: 2, categoria: 'Cueros', descripcion: 'Cuero cabra 12"', cantidad: 20, etiqueta: 'Sin etiqueta', prioridad: 'Urgente' },
+      { id: 3, categoria: 'Bordonas', descripcion: 'Bordona standard', cantidad: 40, etiqueta: 'Necesidad', prioridad: 'Deseable' },
+      { id: 4, categoria: 'Otro', descripcion: 'Baquetas repique', cantidad: 18, etiqueta: 'Sin etiqueta', prioridad: 'Urgente' },
+      { id: 5, categoria: 'Otro', descripcion: 'Correas ajustables', cantidad: 3, etiqueta: 'Necesidad', prioridad: 'Urgente' },
+      { id: 6, categoria: 'Otro', descripcion: 'Surdo 2da usado', cantidad: 2, etiqueta: 'Para venta', prioridad: 'Urgente' }
+    ],
+    ritmistasDbRaw: [
+      { initials: 'MP', name: 'Martina Paredes', dni: '38.451.902', telefono: '+549 341 500 1234', nacimientoIso: '2001-03-14', talleRemera: 'M', calzado: '38', naipe: 'Caixas', naipeHistory: 'Caixa (2023–2026)', editions: '4 ediciones' },
+      { initials: 'JR', name: 'Joaquín Ríos', dni: '40.112.334', telefono: '+549 341 500 2345', nacimientoIso: '1999-07-02', talleRemera: 'L', calzado: '42', naipe: 'Surdos', naipeHistory: 'Repique (2024) → Surdo (2025–2026)', editions: '3 ediciones' },
+      { initials: 'CV', name: 'Camila Vega', dni: '35.882.110', telefono: '+549 341 500 3456', nacimientoIso: '2003-11-20', talleRemera: 'S', calzado: '36', naipe: 'Tamborins', naipeHistory: 'Tamborim (2022–2026)', editions: '5 ediciones' },
+      { initials: 'TF', name: 'Tomás Ferreyra', dni: '41.203.887', telefono: '+549 341 500 4567', nacimientoIso: '2000-05-09', talleRemera: 'M', calzado: '41', naipe: 'Chocalho', naipeHistory: 'Chocalho (2025–2026)', editions: '2 ediciones' },
+      { initials: 'LS', name: 'Lucía Sosa', dni: '39.774.501', telefono: '+549 341 500 5678', nacimientoIso: '2002-01-27', talleRemera: 'S', calzado: '37', naipe: 'Surdos', naipeHistory: 'Surdo 3ra (2023–2026)', editions: '4 ediciones' },
+      { initials: 'BN', name: 'Bruno Núñez', dni: '42.560.775', telefono: '+549 341 500 6789', nacimientoIso: '1998-09-30', talleRemera: 'XL', calzado: '43', naipe: 'Frigideiras', naipeHistory: 'Frigideiras (2026)', editions: '1 edición' },
+      { initials: 'VA', name: 'Valentina Acosta', dni: '37.980.214', telefono: '+549 341 500 7890', nacimientoIso: '2004-02-18', talleRemera: 'S', calzado: '35', naipe: 'Repiques', naipeHistory: 'Repique 12" (2021–2026)', editions: '6 ediciones' },
+      { initials: 'ID', name: 'Ignacio Díaz', dni: '39.221.660', telefono: '+549 341 500 8901', nacimientoIso: '1997-12-05', talleRemera: 'L', calzado: '44', naipe: 'Caixas', naipeHistory: 'Caixa 12" (2022) → Caixa 14" (2023–2026)', editions: '5 ediciones' },
+      { initials: 'RM', name: 'Rocío Medina', dni: '40.885.331', telefono: '+549 341 500 9012', nacimientoIso: '2002-08-22', talleRemera: 'M', calzado: '37', naipe: 'Cuicas', naipeHistory: 'Cuica (2024–2026)', editions: '3 ediciones' },
+      { initials: 'GS', name: 'Gastón Silva', dni: '38.109.982', telefono: '+549 341 500 0123', nacimientoIso: '1996-04-11', talleRemera: 'XL', calzado: '45', naipe: 'Surdos', naipeHistory: 'Surdo 1ra (2020–2026)', editions: '7 ediciones' }
+    ],
+    ritmistasEdRaw: [
+      { initials: 'MP', name: 'Martina Paredes', dni: '38.451.902', telefono: '+549 341 500 1234', nacimientoIso: '2001-03-14', talleRemera: 'M', calzado: '38', naipe: 'Caixa 14"', pagado: 35000, total: 42000, rifasAsignadas: 15, rifasVendidas: 12, rifasRendido: 60000, st: 'ok' },
+      { initials: 'JR', name: 'Joaquín Ríos', dni: '40.112.334', telefono: '+549 341 500 2345', nacimientoIso: '1999-07-02', talleRemera: 'L', calzado: '42', naipe: 'Surdo 2da', pagado: 10000, total: 20000, rifasAsignadas: 10, rifasVendidas: 6, rifasRendido: 30000, st: 'warn' },
+      { initials: 'CV', name: 'Camila Vega', dni: '35.882.110', telefono: '+549 341 500 3456', nacimientoIso: '2003-11-20', talleRemera: 'S', calzado: '36', naipe: 'Tamborim', pagado: 20000, total: 20000, rifasAsignadas: 10, rifasVendidas: 10, rifasRendido: 50000, st: 'ok' },
+      { initials: 'TF', name: 'Tomás Ferreyra', dni: '41.203.887', telefono: '+549 341 500 4567', nacimientoIso: '2000-05-09', talleRemera: 'M', calzado: '41', naipe: 'Chocalho', pagado: 0, total: 20000, rifasAsignadas: 10, rifasVendidas: 2, rifasRendido: 10000, st: 'bad' },
+      { initials: 'LS', name: 'Lucía Sosa', dni: '39.774.501', telefono: '+549 341 500 5678', nacimientoIso: '2002-01-27', talleRemera: 'S', calzado: '37', naipe: 'Surdo 3ra', pagado: 20000, total: 20000, rifasAsignadas: 10, rifasVendidas: 10, rifasRendido: 50000, st: 'ok' },
+      { initials: 'BN', name: 'Bruno Núñez', dni: '42.560.775', telefono: '+549 341 500 6789', nacimientoIso: '1998-09-30', talleRemera: 'XL', calzado: '43', naipe: 'Frigideiras', pagado: 5000, total: 20000, rifasAsignadas: 10, rifasVendidas: 6, rifasRendido: 30000, st: 'warn' },
+      { initials: 'VA', name: 'Valentina Acosta', dni: '37.980.214', telefono: '+549 341 500 7890', nacimientoIso: '2004-02-18', talleRemera: 'S', calzado: '35', naipe: 'Repique 12"', pagado: 20000, total: 20000, rifasAsignadas: 10, rifasVendidas: 10, rifasRendido: 50000, st: 'ok' },
+      { initials: 'ID', name: 'Ignacio Díaz', dni: '39.221.660', telefono: '+549 341 500 8901', nacimientoIso: '1997-12-05', talleRemera: 'L', calzado: '44', naipe: 'Caixa 14"', pagado: 0, total: 20000, rifasAsignadas: 10, rifasVendidas: 2, rifasRendido: 10000, st: 'bad' },
+      { initials: 'RM', name: 'Rocío Medina', dni: '40.885.331', telefono: '+549 341 500 9012', nacimientoIso: '2002-08-22', talleRemera: 'M', calzado: '37', naipe: 'Cuica', pagado: 12000, total: 20000, rifasAsignadas: 10, rifasVendidas: 6, rifasRendido: 30000, st: 'warn' },
+      { initials: 'GS', name: 'Gastón Silva', dni: '38.109.982', telefono: '+549 341 500 0123', nacimientoIso: '1996-04-11', talleRemera: 'XL', calzado: '45', naipe: 'Surdo 1ra', pagado: 20000, total: 20000, rifasAsignadas: 10, rifasVendidas: 10, rifasRendido: 50000, st: 'ok' }
+    ]
+  };
+  static subtipos = { Caixas: ['12"', '14"'], Repiques: ['12"', '14"', '16"'], Surdos: ['1ra', '2da', '3ra'] };
+
+  fileInputRef = React.createRef();
+
+  componentDidMount() {
+    this._onResize = () => this.setState({ isDesktop: window.innerWidth >= 900 });
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this._onResize);
+  }
+
+  go(module, section) { this.setState({ module, section }); }
+
+  parseTimeline(naipeHistory) {
+    // "Caixa (2023–2026)" or "Repique (2024) → Surdo (2025–2026)"
+    return naipeHistory.split('→').map(part => {
+      const m = part.match(/^(.*?)\s*\(([\d–\s]+)\)/);
+      return m ? { naipe: m[1].trim(), year: m[2].trim() } : { naipe: part.trim(), year: '' };
+    });
+  }
+
+  calcAge(isoDate) {
+    const b = new Date(isoDate);
+    const now = new Date();
+    let age = now.getFullYear() - b.getFullYear();
+    if (now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) age--;
+    return age;
+  }
+
+  historialTexto(timeline) {
+    return timeline.map(t => {
+      const [from, to] = t.year.split('–');
+      return to ? `De ${from} a ${to} tocó ${t.naipe}` : `En ${from} tocó ${t.naipe}`;
+    }).join('. ') + '.';
+  }
+
+  buildFicha(fichaOpen, c, statusBadge, stLabel) {
+    if (!fichaOpen) return {};
+    const r = fichaOpen.data;
+    const nacimiento = new Date(r.nacimientoIso).toLocaleDateString('es-AR');
+    const edad = this.calcAge(r.nacimientoIso);
+    if (fichaOpen.type === 'ed') {
+      const b = statusBadge(stLabel[r.st], r.st);
+      const pendiente = r.total - r.pagado;
+      const money = (n) => `$${n.toLocaleString('es-AR')}`;
+      return {
+        isEdition: true, initials: r.initials, name: r.name, dni: r.dni, telefono: r.telefono, nacimiento, nacimientoIso: r.nacimientoIso, edad,
+        talleRemera: r.talleRemera, calzado: r.calzado, naipeLabel: r.naipe, naipe: r.naipe,
+        status: b.text, statusStyle: b.style, total: money(r.total), pagado: money(r.pagado),
+        pendiente: money(pendiente),
+        historialTexto: `Tocó ${r.naipe} en esta edición.`,
+        indumentaria: r.initials === 'MP' ? [
+          { item: 'Remera oficial', entregado: 'Entregada' },
+          { item: 'Pantalón', entregado: 'Entregado' },
+          { item: 'Zapatillas', entregado: 'Entregado' },
+          { item: 'Medias', entregado: 'Pendiente' },
+          { item: 'Gorra', entregado: 'Entregado' },
+          { item: 'Accesorio de Caixa', entregado: 'Entregado' }
+        ] : [
+          { item: 'Remera oficial', entregado: 'Entregada' },
+          { item: 'Pantalón', entregado: 'Entregado' },
+          { item: 'Zapatillas', entregado: r.st === 'bad' ? 'Pendiente' : 'Entregado' },
+          { item: 'Medias', entregado: r.st === 'warn' ? 'Pendiente' : 'Entregado' },
+          { item: 'Gorra', entregado: 'Entregado' },
+          { item: 'Accesorio de naipe', entregado: r.st === 'bad' ? 'Pendiente' : 'Entregado' }
+        ],
+        rifasAsignadas: r.rifasAsignadas, rifasVendidas: r.rifasVendidas, rifasRendido: money(r.rifasRendido),
+        raw: r, timeline: []
+      };
+    }
+    const timeline = this.parseTimeline(r.naipeHistory);
+    return {
+      isEdition: false, initials: r.initials, name: r.name, dni: r.dni, telefono: r.telefono, nacimiento, nacimientoIso: r.nacimientoIso, edad,
+      talleRemera: r.talleRemera, calzado: r.calzado, naipeLabel: r.naipeHistory, naipe: r.naipe,
+      naipeHistory: r.naipeHistory, editions: r.editions, timeline,
+      historialTexto: this.historialTexto(timeline), raw: r
+    };
+  }
+
+  startEditFicha = () => {
+    const f = this.state.fichaOpen;
+    if (!f) return;
+    const r = f.data;
+    const draft = f.type === 'ed'
+      ? { name: r.name, dni: r.dni, telefono: r.telefono, nacimientoIso: r.nacimientoIso, talleRemera: r.talleRemera, calzado: r.calzado, naipe: r.naipe, total: r.total, pagado: r.pagado, rifasAsignadas: r.rifasAsignadas, rifasVendidas: r.rifasVendidas, rifasRendido: r.rifasRendido }
+      : { name: r.name, dni: r.dni, telefono: r.telefono, nacimientoIso: r.nacimientoIso, talleRemera: r.talleRemera, calzado: r.calzado };
+    this.setState({ editingFicha: true, draft });
+  };
+  cancelEditFicha = () => this.setState({ editingFicha: false, draft: {} });
+  onDraftChange = (key, numeric) => (e) => {
+    const v = numeric ? (parseInt(e.target.value.replace(/\D/g, ''), 10) || 0) : e.target.value;
+    this.setState({ draft: { ...this.state.draft, [key]: v } });
+  };
+  saveFicha = () => {
+    const f = this.state.fichaOpen;
+    if (!f) return;
+    const updated = { ...f.data, ...this.state.draft };
+    if (f.type === 'ed') {
+      this.setState({
+        ritmistasEdRaw: this.state.ritmistasEdRaw.map(row => row.dni === f.data.dni ? updated : row),
+        fichaOpen: { type: 'ed', data: updated }, editingFicha: false, draft: {}
+      });
+    } else {
+      this.setState({
+        ritmistasDbRaw: this.state.ritmistasDbRaw.map(row => row.dni === f.data.dni ? updated : row),
+        fichaOpen: { type: 'db', data: updated }, editingFicha: false, draft: {}
+      });
+    }
+  };
+
+  setInvTabInstrumentos = () => this.setState({ inventarioTab: 'instrumentos', invTipoFilter: 'Todos' });
+  setInvTabRepuestos = () => this.setState({ inventarioTab: 'repuestos', invTipoFilter: 'Todos' });
+  openGroupFicha = (tab, name) => this.setState({ invGroupFicha: { tab, name } });
+  closeGroupFicha = () => this.setState({ invGroupFicha: null });
+  openAddInstrumento = (prefillTipo) => this.setState({ instrumentoDialogOpen: { mode: 'add' }, draftInst: { tipo: prefillTipo || '', marca: '', pulgadas: '', tipoCaixa: 'Vazada', estado: 'Bueno', cantidad: 1, etiqueta: 'Sin etiqueta', prioridad: 'Urgente' }, tipoComboOpen: false });
+  openEditInstrumento = (item) => this.setState({ instrumentoDialogOpen: { mode: 'edit', id: item.id }, draftInst: { ...item }, tipoComboOpen: false });
+  closeInstrumentoDialog = () => this.setState({ instrumentoDialogOpen: null, tipoComboOpen: false });
+  saveInstrumento = () => {
+    const d = this.state.draftInst;
+    const tipo = (d.tipo || '').trim();
+    if (!tipo) return;
+    const newCustom = this.state.customTipos.includes(tipo) || ['Caixa', 'Repique', 'Surdo', 'Tamborim', 'Chocalho', 'Frigideira', 'Cuica'].includes(tipo) ? this.state.customTipos : [...this.state.customTipos, tipo];
+    const rec = { ...d, tipo, cantidad: parseInt(d.cantidad, 10) || 0, tipoCaixa: tipo === 'Caixa' ? (d.tipoCaixa || 'Vazada') : '' };
+    const dlg = this.state.instrumentoDialogOpen;
+    if (dlg.mode === 'add') {
+      const id = Math.max(0, ...this.state.instrumentosRaw.map(x => x.id)) + 1;
+      this.setState({ instrumentosRaw: [...this.state.instrumentosRaw, { ...rec, id }], customTipos: newCustom, instrumentoDialogOpen: null });
+    } else {
+      this.setState({ instrumentosRaw: this.state.instrumentosRaw.map(x => x.id === dlg.id ? { ...rec, id: dlg.id } : x), customTipos: newCustom, instrumentoDialogOpen: null });
+    }
+  };
+  openAddRepuesto = (prefillCategoria) => this.setState({ repuestoDialogOpen: { mode: 'add' }, draftRep: { categoria: prefillCategoria || 'Cueros', descripcion: '', cantidad: 1, etiqueta: 'Sin etiqueta', prioridad: 'Urgente' } });
+  openEditRepuesto = (item) => this.setState({ repuestoDialogOpen: { mode: 'edit', id: item.id }, draftRep: { ...item } });
+  closeRepuestoDialog = () => this.setState({ repuestoDialogOpen: null });
+  saveRepuesto = () => {
+    const d = this.state.draftRep;
+    if (!(d.descripcion || '').trim()) return;
+    const rec = { ...d, cantidad: parseInt(d.cantidad, 10) || 0 };
+    const dlg = this.state.repuestoDialogOpen;
+    if (dlg.mode === 'add') {
+      const id = Math.max(0, ...this.state.repuestosRaw.map(x => x.id)) + 1;
+      this.setState({ repuestosRaw: [...this.state.repuestosRaw, { ...rec, id }], repuestoDialogOpen: null });
+    } else {
+      this.setState({ repuestosRaw: this.state.repuestosRaw.map(x => x.id === dlg.id ? { ...rec, id: dlg.id } : x), repuestoDialogOpen: null });
+    }
+  };
+  onTipoInputChange = (e) => this.setState({ draftInst: { ...this.state.draftInst, tipo: e.target.value }, tipoComboOpen: true });
+  onTipoFocus = () => this.setState({ tipoComboOpen: true });
+  onCreateTipo = () => this.setState({ tipoComboOpen: false });
+  onDraftInstField = (key, numeric) => (e) => this.setState({ draftInst: { ...this.state.draftInst, [key]: numeric ? e.target.value : e.target.value } });
+
+  triggerFileUpload = () => { if (this.fileInputRef.current) this.fileInputRef.current.click(); };
+  onLogoUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => this.setState({ logoDataUrl: ev.target.result });
+    reader.readAsDataURL(file);
+  };
+  clearLogo = () => this.setState({ logoDataUrl: null });
+  onCustomColor = (e) => this.setState({ primaryColor: e.target.value });
+  onNameChange = (e) => this.setState({ batteryName: e.target.value });
+
+  renderVals() {
+    const st = this.state;
+    const dark = st.darkMode;
+    const primary = st.primaryColor;
+
+    const c = {
+      bg: dark ? '#0A0A0A' : '#FAFAF7',
+      surface: dark ? '#141414' : '#FFFFFF',
+      bgSubtle: dark ? '#1C1C1A' : '#F2F1EC',
+      bgMuted: dark ? '#1C1C1A' : '#F2F1EC',
+      border: dark ? '#2A2A27' : '#E7E5DE',
+      borderStrong: dark ? '#3A3A36' : '#D6D3CA',
+      text: dark ? '#FAFAF7' : '#0A0A0A',
+      textMuted: dark ? '#B5B3AC' : '#4A4A48',
+      textTertiary: dark ? '#8B8A85' : '#8B8A85',
+      primary: primary,
+      primarySoft: `color-mix(in srgb, ${primary} 12%, ${dark ? '#0A0A0A' : '#FFFFFF'})`,
+      primaryOn: '#FFFFFF',
+      success: '#16A34A', successBg: dark ? 'rgba(22,163,74,0.16)' : '#ECFDF3', successText: '#16A34A',
+      warning: '#B45309', warningBg: dark ? 'rgba(180,83,9,0.16)' : '#FEF3C7', warningText: '#B45309',
+      danger: '#DC2626', dangerBg: dark ? 'rgba(220,38,38,0.16)' : '#FEF2F2', dangerText: '#DC2626'
+    };
+
+    const font = "font-family:'Geist',sans-serif;letter-spacing:-0.005em;";
+    const s = {
+      shell: `${font}display:flex;min-height:100vh;background:${c.bg};color:${c.text};`,
+      sidebar: `width:222px;flex-shrink:0;border-right:1px solid ${c.border};padding:18px 14px;display:flex;flex-direction:column;background:${c.surface};`,
+      moduleSwitchWrap: `display:flex;gap:4px;background:${c.bgSubtle};border-radius:12px;padding:4px;margin-bottom:16px;`,
+      mainCol: `flex:1;display:flex;flex-direction:column;min-width:0;`,
+      topBar: `padding:22px 28px 14px;border-bottom:1px solid ${c.border};`,
+      mobileHeader: `padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid ${c.border};background:${c.surface};`,
+      moduleSwitchWrapMobile: `display:flex;gap:4px;background:${c.bgSubtle};padding:6px 12px;`,
+      content: `flex:1;padding:24px 28px 90px;overflow:auto;max-width:1400px;margin:0 auto;width:100%;`,
+      editionPicker: `display:flex;align-items:center;gap:2px;background:${c.bgSubtle};border-radius:10px;padding:4px;margin-bottom:10px;`,
+      editionArrow: `background:transparent;border:none;color:${c.textMuted};font-size:14px;padding:5px 9px;border-radius:6px;cursor:pointer;`,
+      editionPickerMobile: `display:flex;align-items:center;background:${c.bgSubtle};border-radius:8px;`,
+      editionArrowMobile: `background:transparent;border:none;color:${c.textMuted};font-size:14px;padding:5px 8px;cursor:pointer;`,
+      iconBtnMobile: `background:${c.bgSubtle};border:none;border-radius:8px;padding:6px 9px;font-size:14px;cursor:pointer;color:${c.text};`,
+      darkToggle: `margin-top:8px;background:${c.bgSubtle};border:1px solid ${c.border};border-radius:10px;padding:10px;font-size:12px;font-weight:600;color:${c.text};cursor:pointer;`,
+      darkToggleMobile: `background:${c.bgSubtle};border:none;border-radius:8px;padding:6px 9px;font-size:14px;cursor:pointer;`,
+      card: `background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(10,10,10,.06), 0 1px 1px rgba(10,10,10,.04);`,
+      grid3: `display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;`,
+      grid4: `display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:28px;`,
+      metricCard: `background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:18px 20px;box-shadow:0 1px 2px rgba(10,10,10,.06), 0 1px 1px rgba(10,10,10,.04);`,
+      metricLabel: `font-size:13px;font-weight:600;letter-spacing:0.02em;color:${c.textMuted};margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;`,
+      metricValue: `font-size:28px;font-weight:700;color:${c.text};font-family:'Geist Mono',monospace;letter-spacing:0.03em;font-variant-numeric:slashed-zero;`,
+      metricCardAccent: `background:${c.primarySoft};border-radius:12px;padding:18px 20px;`,
+      metricLabelAccent: `font-size:13px;font-weight:600;letter-spacing:0.02em;color:${c.text};margin-bottom:12px;`,
+      metricValueAccent: `font-size:28px;font-weight:700;color:${c.text};font-family:'Geist Mono',monospace;letter-spacing:0.03em;font-variant-numeric:slashed-zero;`,
+      sectionLabel: `font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${c.textMuted};margin-bottom:12px;`,
+      searchRow: `display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;`,
+      filterRow: `display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;`,
+      searchInput: `flex:1;min-width:180px;height:34px;background:${c.surface};border:1px solid ${c.borderStrong};border-radius:8px;padding:0 14px;font-size:13px;color:${c.text};`,
+      primaryBtn: `display:inline-flex;align-items:center;justify-content:center;height:34px;background:${c.primary};color:#FFFFFF;border:1px solid transparent;border-radius:8px;padding:0 16px;font-size:13px;font-weight:500;letter-spacing:-0.005em;cursor:pointer;`,
+      secondaryBtn: `display:inline-flex;align-items:center;justify-content:center;height:34px;background:${c.surface};border:1px solid ${c.borderStrong};color:${c.text};border-radius:8px;padding:0 16px;font-size:13px;font-weight:500;letter-spacing:-0.005em;cursor:pointer;`,
+      textBtn: `background:transparent;border:none;color:${c.textMuted};font-size:13px;padding:8px 10px;cursor:pointer;text-decoration:underline;`,
+      tableWrap: `display:flex;flex-direction:column;gap:1px;background:${c.border};border-radius:14px;overflow:hidden;border:1px solid ${c.border};`,
+      tableRow: `background:${c.surface};padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;`,
+      tableScroll: `border:1px solid ${c.border};border-radius:10px;overflow:auto;width:100%;`,
+      table: `width:100%;border-collapse:collapse;font-size:14px;white-space:nowrap;`,
+      th: `text-align:left;background:${c.bg};color:${c.textTertiary};font-weight:500;font-size:11.5px;letter-spacing:0.02em;text-transform:uppercase;padding:10px 12px;border-bottom:1px solid ${c.border};position:sticky;top:0;`,
+      thRight: `text-align:right;background:${c.bg};color:${c.textTertiary};font-weight:500;font-size:11.5px;letter-spacing:0.02em;text-transform:uppercase;padding:10px 12px;border-bottom:1px solid ${c.border};position:sticky;top:0;`,
+      tr: `cursor:pointer;`,
+      td: `padding:12px;border-bottom:1px solid ${c.border};color:${c.text};background:${c.surface};font-family:'Geist Mono',monospace;font-size:12.5px;font-weight:600;letter-spacing:0.02em;font-variant-numeric:slashed-zero;`,
+      tdMuted: `padding:12px;border-bottom:1px solid ${c.border};color:${c.textTertiary};background:${c.surface};font-family:'Geist Mono',monospace;font-size:12.5px;font-weight:600;letter-spacing:0.02em;font-variant-numeric:slashed-zero;`,
+      tdName: `padding:12px;border-bottom:1px solid ${c.border};color:${c.text};font-weight:500;background:${c.surface};`,
+      tdNameLink: `color:${c.text};text-decoration:underline;text-decoration-color:${c.border};text-underline-offset:3px;cursor:pointer;`,
+      tdRight: `padding:12px;border-bottom:1px solid ${c.border};text-align:right;background:${c.surface};font-family:'Geist Mono',monospace;font-size:12.5px;font-weight:600;letter-spacing:0.02em;font-variant-numeric:slashed-zero;`,
+      tdChevron: `padding:12px 16px;border-bottom:1px solid ${c.border};background:${c.surface};color:${c.textMuted};text-align:right;`,
+      nameCell: `display:flex;align-items:center;gap:10px;`,
+      avatarSm: `width:28px;height:28px;border-radius:999px;background:${c.bgMuted};border:1px solid ${c.border};color:${c.textMuted};display:flex;align-items:center;justify-content:center;font-weight:600;font-size:11px;flex-shrink:0;`,
+      waIcon: `display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#E7F9EC;text-decoration:none;`,
+      mailIcon: `display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:${c.bgMuted};color:${c.textMuted};text-decoration:none;`,
+      mono: `font-family:'Geist Mono',monospace;letter-spacing:0.03em;font-weight:600;font-variant-numeric:slashed-zero;`,
+      modalOverlay: `position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;`,
+      modalCard: `background:${c.surface};border-radius:18px;padding:24px;max-width:480px;width:100%;max-height:88vh;overflow:auto;`,
+      modalHeader: `display:flex;align-items:center;gap:14px;margin-bottom:18px;`,
+      modalClose: `background:${c.bgSubtle};border:none;border-radius:8px;width:32px;height:32px;font-size:14px;color:${c.text};cursor:pointer;`,
+      modalGrid: `display:grid;grid-template-columns:repeat(3,1fr);gap:12px;`,
+      modalLabel: `font-size:11px;font-weight:600;color:${c.textMuted};margin-bottom:4px;`,
+      modalValue: `font-size:16px;font-weight:700;color:${c.text};font-family:'Geist Mono',monospace;letter-spacing:0.03em;font-variant-numeric:slashed-zero;`,
+      avatarLg: `width:48px;height:48px;border-radius:12px;background:${c.bgSubtle};color:${c.text};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;`,
+      backBtn: `background:transparent;border:none;color:${c.textMuted};font-size:13px;font-weight:600;cursor:pointer;margin-bottom:16px;padding:0;`,
+      fichaGrid: `display:flex;flex-wrap:wrap;gap:16px;align-items:start;`,
+      fichaColStack: `flex:1 1 300px;max-width:320px;display:flex;flex-direction:column;gap:16px;`,
+      fichaColMain: `flex:3 1 480px;min-width:380px;`,
+      balanceBanner: `background:${dark ? '#000000' : c.text};border-radius:16px;padding:22px;margin-bottom:16px;`,
+      balanceLabel: `font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:#B8B8B8;margin-bottom:10px;`,
+      balanceValue: `font-family:'Geist Mono',monospace;font-size:36px;font-weight:700;color:#FFFFFF;margin-bottom:8px;letter-spacing:0.05em;font-variant-numeric:slashed-zero;`,
+      balanceSub: `font-family:'Geist Mono',monospace;font-size:12px;color:#B8B8B8;letter-spacing:0.03em;font-weight:600;font-variant-numeric:slashed-zero;`,
+      tabsRow: `display:flex;gap:20px;border-bottom:1px solid ${c.border};margin-bottom:16px;`,
+      addModalCard: `background:${c.surface};border-radius:18px;padding:24px;max-width:420px;width:100%;max-height:88vh;overflow:auto;`,
+      wideModalCard: `background:${c.surface};border-radius:18px;padding:0;max-width:520px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;`,
+      wideModalHeader: `display:flex;align-items:center;gap:14px;padding:22px 26px;border-bottom:1px solid ${c.border};flex-shrink:0;`,
+      wideModalIcon: `width:42px;height:42px;border-radius:11px;background:${c.primarySoft};color:${c.text};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;`,
+      wideModalSubtitle: `font-size:12px;color:${c.textMuted};margin-top:2px;`,
+      wideModalBody: `padding:22px 26px;overflow:auto;flex:1;`,
+      wideModalFooter: `display:flex;gap:10px;padding:18px 26px;border-top:1px solid ${c.border};flex-shrink:0;`,
+      formSectionLabel: `font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${c.textMuted};margin:20px 0 12px;`,
+      formSectionLabelFirst: `font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${c.textMuted};margin:0 0 12px;`,
+      comboInputWrap: `position:relative;`,
+      comboChevron: `position:absolute;right:12px;top:38px;color:${c.textMuted};font-size:12px;pointer-events:none;`,
+      formLabel: `font-size:12px;font-weight:600;color:${c.textMuted};margin-bottom:6px;display:block;`,
+      formField: `margin-bottom:14px;`,
+      formInput: `width:100%;background:${c.bgSubtle};border:1px solid ${c.border};border-radius:10px;padding:11px 14px;font-size:14px;color:${c.text};transition:border-color .12s;`,
+      formInputFocus: `border-color:${c.primary};background:${c.surface};box-shadow:0 0 0 3px ${c.primarySoft};`,
+      comboOptionHover: `background:${c.bgSubtle};`,
+      formRow2: `display:grid;grid-template-columns:1fr 1fr;gap:12px;`,
+      modalActions: `display:flex;gap:10px;margin-top:8px;`,
+      avatar: `width:38px;height:38px;border-radius:10px;background:${c.bgSubtle};color:${c.text};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;`,
+      equalizer: `display:flex;gap:3px;height:8px;border-radius:6px;overflow:hidden;`,
+      bottomNav: `position:fixed;bottom:0;left:0;right:0;background:${c.surface};border-top:1px solid ${c.border};display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom));`,
+      agendaGrid: `display:grid;grid-template-columns:repeat(7,1fr);gap:6px;`,
+      logoPreview: `width:64px;height:64px;border-radius:14px;background:${c.bgSubtle};display:flex;align-items:center;justify-content:center;flex-shrink:0;`,
+      colorGrid: `display:flex;gap:10px;flex-wrap:wrap;align-items:center;`,
+      customSwatchWrap: `display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;`,
+      customColorInput: `width:36px;height:36px;border-radius:50%;border:2px solid ${c.border};padding:0;cursor:pointer;`,
+      segmented: `display:flex;gap:4px;background:${c.bgSubtle};border-radius:10px;padding:4px;`,
+      tdBadgeCell: `padding:12px;border-bottom:1px solid ${c.border};background:${c.surface};`,
+      tdActions: `padding:12px;border-bottom:1px solid ${c.border};background:${c.surface};text-align:right;white-space:nowrap;`,
+      iconBtnSm: `background:transparent;border:none;border-radius:6px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;color:${c.textMuted};cursor:pointer;`,
+      iconBtnSmDanger: `background:transparent;border:none;border-radius:6px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;color:${c.danger};cursor:pointer;`,
+      comboDropdown: `position:absolute;top:100%;left:0;right:0;margin-top:4px;background:${c.surface};border:1px solid ${c.border};border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.14);max-height:220px;overflow:auto;z-index:20;padding:4px;`,
+      comboOption: `display:block;width:100%;text-align:left;background:transparent;border:none;padding:8px 10px;font-size:13px;color:${c.text};border-radius:6px;cursor:pointer;`,
+      comboOptionCreate: `display:block;width:100%;text-align:left;background:transparent;border:none;border-top:1px solid ${c.border};margin-top:4px;padding-top:10px;padding-left:10px;padding-bottom:8px;padding-right:10px;font-size:13px;font-weight:600;color:${c.primary};cursor:pointer;`,
+      invCard: `background:${c.surface};border:1px solid ${c.border};border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;`,
+      invCardHeader: `display:flex;align-items:flex-start;justify-content:space-between;gap:10px;`,
+      invCardTitle: `font-weight:700;font-size:14px;color:${c.text};`,
+      invCardActions: `display:flex;gap:2px;flex-shrink:0;`,
+      invCardMeta: `display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:${c.textMuted};`,
+      grid4Sm: `display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;`,
+      metricCardSm: `background:${c.surface};border:1px solid ${c.border};border-radius:10px;padding:12px 14px;box-shadow:0 1px 2px rgba(10,10,10,.05);`,
+      metricLabelSm: `font-size:11.5px;font-weight:600;color:${c.textMuted};margin-bottom:6px;`,
+      metricValueSm: `font-size:20px;font-weight:700;color:${c.text};font-family:'Geist Mono',monospace;letter-spacing:0.02em;font-variant-numeric:slashed-zero;`,
+      metricCardAccentSm: `background:${c.primarySoft};border-radius:10px;padding:12px 14px;`
+    };
+
+    const navBtn = (active) => `display:flex;align-items:center;gap:10px;width:100%;text-align:left;height:30px;background:${active ? c.text : 'transparent'};border:none;border-radius:8px;padding:0 10px;font-size:13px;font-weight:500;color:${active ? c.bg : c.textMuted};cursor:pointer;margin-bottom:2px;transition:background .1s;`;
+    const navIcon = (active) => active ? c.bg : c.textMuted;
+    const moduleBtn = (active) => `flex:1;background:${active ? c.surface : 'transparent'};border:none;border-radius:9px;padding:9px;font-size:12px;font-weight:600;color:${active ? c.text : c.textMuted};cursor:pointer;box-shadow:${active ? '0 1px 2px rgba(0,0,0,0.08)' : 'none'};`;
+    const moduleBtnMobile = (active) => `flex:1;background:transparent;border:none;border-bottom:2px solid ${active ? c.primary : 'transparent'};padding:8px;font-size:12px;font-weight:600;color:${active ? c.text : c.textMuted};cursor:pointer;`;
+
+    const isDb = st.module === 'db';
+    const isCarnaval = st.module === 'carnaval';
+    const titles = {
+      naipes: ['Naipes', 'Agrupación estructural por instrumento'],
+      ritmistasDb: ['Ritmistas', 'Padrón histórico completo'],
+      inventario: ['Inventario', 'Instrumentos y repuestos'],
+      dashboard: ['Dashboard', `Carnaval ${st.edition}`],
+      ritmistasEd: ['Ritmistas', `Edición ${st.edition}`],
+      presupuesto: ['Presupuesto', `Edición ${st.edition}`],
+      agenda: ['Agenda', `Edición ${st.edition}`],
+      config: ['Configuración', 'Identidad de la batería']
+    };
+    const [sectionTitle, sectionSubtitle] = titles[st.section] || ['', ''];
+
+    const naipeCards = [
+      { name: 'Caixas', total: 50, breakdown: "12\": 22 · 14\": 28" },
+      { name: 'Repiques', total: 24, breakdown: "12\": 8 · 14\": 10 · 16\": 6" },
+      { name: 'Surdos', total: 30, breakdown: "1ra: 10 · 2da: 10 · 3ra: 10" },
+      { name: 'Tamborins', total: 24, breakdown: 'sin subtipo' },
+      { name: 'Chocalho', total: 20, breakdown: 'sin subtipo' },
+      { name: 'Frigideiras', total: 16, breakdown: 'sin subtipo' },
+      { name: 'Cuicas', total: 8, breakdown: 'sin subtipo' }
+    ];
+
+    const naipeStatusCards = naipeCards.map(n => {
+      const conf = Math.round(n.total * 0.72), duda = Math.round(n.total * 0.16), no = n.total - conf - duda;
+      return {
+        name: n.name,
+        confirmedBar: `flex:${conf};background:${c.success};`,
+        dudaBar: `flex:${duda};background:${c.warning};`,
+        noBar: `flex:${no};background:${c.danger};`,
+        summary: `${conf} confirmados · ${duda} en duda · ${no} sin confirmar`
+      };
+    });
+
+    const naipeOptions = ['Caixas', 'Repiques', 'Surdos', 'Tamborins', 'Chocalho', 'Frigideiras', 'Cuicas'];
+    const ritmistasDbRaw = st.ritmistasDbRaw;
+    const naipeFilterChips = (current, onPick) => ['Todos', ...naipeOptions].map(opt => ({
+      label: opt,
+      onClick: () => onPick(opt),
+      style: `background:${opt === current ? 'transparent' : c.surface};color:${opt === current ? c.primary : c.textMuted};border:1.5px solid ${opt === current ? c.primary : c.border};border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;`
+    }));
+    const naipeFilterChipsDb = naipeFilterChips(st.naipeFilterDb, (opt) => this.setState({ naipeFilterDb: opt }));
+    const naipeFilterChipsEd = naipeFilterChips(st.naipeFilterEd, (opt) => this.setState({ naipeFilterEd: opt }));
+    const ritmistasDb = ritmistasDbRaw
+      .filter(r => st.naipeFilterDb === 'Todos' || r.naipe === st.naipeFilterDb)
+      .map((r, i) => ({ ...r, n: i + 1, onOpen: () => this.setState({ fichaOpen: { type: 'db', data: r } }) }));
+
+    const defaultTipos = ['Caixa', 'Repique', 'Surdo', 'Tamborim', 'Chocalho', 'Frigideira', 'Cuica'];
+    const allTipos = [...defaultTipos, ...st.customTipos.filter(t => !defaultTipos.includes(t))];
+    const pillBadge = (bg, tx) => `display:inline-flex;align-items:center;height:20px;font-size:11px;font-weight:500;letter-spacing:-0.005em;padding:0 7px;border-radius:999px;background:${bg};color:${tx};white-space:nowrap;`;
+    const estadoBadgeStyle = (estado) => {
+      const map = { 'Bueno': pillBadge(c.successBg, c.successText), 'Regular': pillBadge(c.warningBg, c.warningText), 'Necesita reparación': pillBadge(c.dangerBg, c.dangerText), 'De baja': pillBadge(c.bgSubtle, c.textMuted) };
+      return map[estado] || pillBadge(c.bgSubtle, c.textMuted);
+    };
+    const etiquetaInfo = (etiqueta, prioridad) => {
+      if (etiqueta === 'Necesidad') return { label: prioridad === 'Urgente' ? 'Necesidad urgente' : 'Necesidad deseable', style: pillBadge(prioridad === 'Urgente' ? c.dangerBg : c.warningBg, prioridad === 'Urgente' ? c.dangerText : c.warningText) };
+      if (etiqueta === 'Para venta') return { label: 'Para venta', style: pillBadge(c.successBg, c.successText) };
+      return { label: '', style: '' };
+    };
+    const etiquetaToggleOptions = ['Todos', 'Necesidad', 'Para venta'];
+    const invIsInstrumentos = st.inventarioTab === 'instrumentos';
+    const invSourceTipos = invIsInstrumentos ? allTipos : ['Cueros', 'Bordonas', 'Otro'];
+    const invTipoChips = ['Todos', ...invSourceTipos].map(opt => ({
+      label: opt,
+      onClick: () => this.setState({ invTipoFilter: opt }),
+      style: `background:${opt === st.invTipoFilter ? 'transparent' : c.surface};color:${opt === st.invTipoFilter ? c.primary : c.textMuted};border:1.5px solid ${opt === st.invTipoFilter ? c.primary : c.border};border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;`
+    }));
+    const invEtiquetaToggle = etiquetaToggleOptions.map(opt => ({
+      label: opt,
+      onClick: () => this.setState({ invEtiquetaFilter: opt }),
+      style: `flex:1;background:${opt === st.invEtiquetaFilter ? c.surface : 'transparent'};border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;color:${opt === st.invEtiquetaFilter ? c.text : c.textMuted};cursor:pointer;box-shadow:${opt === st.invEtiquetaFilter ? '0 1px 2px rgba(0,0,0,.08)' : 'none'};white-space:nowrap;`
+    }));
+    const matchesEtiquetaFilter = (row) => st.invEtiquetaFilter === 'Todos' || (st.invEtiquetaFilter === 'Necesidad' && row.etiqueta === 'Necesidad') || (st.invEtiquetaFilter === 'Para venta' && row.etiqueta === 'Para venta');
+    const sortUrgenteFirst = (a, b) => {
+      const ua = a.etiqueta === 'Necesidad' && a.prioridad === 'Urgente' ? 0 : 1;
+      const ub = b.etiqueta === 'Necesidad' && b.prioridad === 'Urgente' ? 0 : 1;
+      return ua - ub;
+    };
+    const buildInstrumentoRow = (i) => {
+      const et = etiquetaInfo(i.etiqueta, i.prioridad);
+      return { ...i, marcaLabel: i.marca || '—', pulgadasLabel: i.pulgadas || '—', tipoCaixaLabel: i.tipo === 'Caixa' ? (i.tipoCaixa || '—') : '—',
+        estadoStyle: estadoBadgeStyle(i.estado), etiqueta: et.label, etiquetaLabel: et.label, etiquetaStyle: et.style,
+        onEdit: () => this.openEditInstrumento(i), onDelete: () => this.setState({ instrumentosRaw: this.state.instrumentosRaw.filter(x => x.id !== i.id) }) };
+    };
+    const buildRepuestoRow = (i) => {
+      const et = etiquetaInfo(i.etiqueta, i.prioridad);
+      return { ...i, etiqueta: et.label, etiquetaLabel: et.label, etiquetaStyle: et.style,
+        onEdit: () => this.openEditRepuesto(i), onDelete: () => this.setState({ repuestosRaw: this.state.repuestosRaw.filter(x => x.id !== i.id) }) };
+    };
+    const instrumentos = st.instrumentosRaw
+      .filter(i => st.invTipoFilter === 'Todos' || i.tipo === st.invTipoFilter)
+      .filter(matchesEtiquetaFilter)
+      .sort(sortUrgenteFirst)
+      .map(i => buildInstrumentoRow(i));
+    const repuestos = st.repuestosRaw
+      .filter(i => st.invTipoFilter === 'Todos' || i.categoria === st.invTipoFilter)
+      .filter(matchesEtiquetaFilter)
+      .sort(sortUrgenteFirst)
+      .map(i => buildRepuestoRow(i));
+    const invTabBtn = (active) => `background:transparent;border:none;border-bottom:2px solid ${active ? c.primary : 'transparent'};padding:10px 0;font-size:13px;font-weight:700;color:${active ? c.text : c.textMuted};cursor:pointer;`;
+    const sumCantidad = (arr) => arr.reduce((s2, r) => s2 + (r.cantidad || 0), 0);
+    const activeRaw = invIsInstrumentos ? st.instrumentosRaw : st.repuestosRaw;
+    const metrics = {
+      total: sumCantidad(activeRaw),
+      urgente: sumCantidad(activeRaw.filter(r => r.etiqueta === 'Necesidad' && r.prioridad === 'Urgente')),
+      deseable: sumCantidad(activeRaw.filter(r => r.etiqueta === 'Necesidad' && r.prioridad === 'Deseable')),
+      venta: sumCantidad(activeRaw.filter(r => r.etiqueta === 'Para venta'))
+    };
+    const estadoColor = { 'Bueno': c.success, 'Regular': c.warning, 'Necesita reparación': c.danger, 'De baja': c.borderStrong };
+    const groupKey = invIsInstrumentos ? 'tipo' : 'categoria';
+    const groups = {};
+    activeRaw.filter(matchesEtiquetaFilter).forEach(r => { (groups[r[groupKey]] = groups[r[groupKey]] || []).push(r); });
+    const breakdown = Object.keys(groups).sort((a, b) => sumCantidad(groups[b]) - sumCantidad(groups[a])).map(name => {
+      const rows = groups[name];
+      const total = sumCantidad(rows);
+      const detail = invIsInstrumentos
+        ? Object.entries(rows.reduce((acc, r) => { acc[r.estado] = (acc[r.estado] || 0) + r.cantidad; return acc; }, {})).map(([k, v]) => `${k}: ${v}`).join(' · ')
+        : `${rows.length} ${rows.length === 1 ? 'variante' : 'variantes'}`;
+      const chartSegments = invIsInstrumentos
+        ? Object.entries(rows.reduce((acc, r) => { acc[r.estado] = (acc[r.estado] || 0) + r.cantidad; return acc; }, {})).map(([k, v]) => ({ style: `flex:${v};background:${estadoColor[k] || c.borderStrong};` }))
+        : null;
+      return { name, total, detail, chartSegments, onOpen: () => this.openGroupFicha(invIsInstrumentos ? 'instrumentos' : 'repuestos', name) };
+    });
+    const chartGroups = [
+      { label: 'Necesidad urgente', color: c.danger, value: metrics.urgente },
+      { label: 'Necesidad deseable', color: c.warning, value: metrics.deseable },
+      { label: 'Para venta', color: c.success, value: metrics.venta },
+      { label: 'Sin etiqueta', color: c.borderStrong, value: Math.max(metrics.total - metrics.urgente - metrics.deseable - metrics.venta, 0) }
+    ].filter(g => g.value > 0);
+    const inv = {
+      tabStyle: { instrumentos: invTabBtn(invIsInstrumentos), repuestos: invTabBtn(!invIsInstrumentos) },
+      etiquetaToggle: invEtiquetaToggle,
+      tipoChips: invTipoChips,
+      addLabel: invIsInstrumentos ? '+ Agregar instrumento' : '+ Agregar repuesto',
+      openAdd: () => invIsInstrumentos ? this.openAddInstrumento() : this.openAddRepuesto(),
+      metrics, breakdown, breakdownLabel: invIsInstrumentos ? 'Unidades por tipo' : 'Unidades por categoría',
+      groupColLabel: invIsInstrumentos ? 'Tipo' : 'Categoría',
+      chart: { segments: chartGroups.map(g => ({ style: `flex:${g.value};background:${g.color};` })), legend: chartGroups.map(g => ({ label: `${g.label} · ${g.value}`, dotStyle: `background:${g.color};` })) }
+    };
+    const groupFicha = (() => {
+      const gf = st.invGroupFicha;
+      if (!gf) return {};
+      const isInstrumentos = gf.tab === 'instrumentos';
+      const rows = isInstrumentos
+        ? st.instrumentosRaw.filter(r => r.tipo === gf.name).sort(sortUrgenteFirst).map(r => ({ ...buildInstrumentoRow(r), cardTitle: `${r.marca || r.tipo} ${r.pulgadas || ''}`.trim() }))
+        : st.repuestosRaw.filter(r => r.categoria === gf.name).sort(sortUrgenteFirst).map(r => ({ ...buildRepuestoRow(r), cardTitle: r.descripcion }));
+      const total = sumCantidad(rows);
+      const metricCards = isInstrumentos
+        ? Object.entries(rows.reduce((acc, r) => { acc[r.estado] = (acc[r.estado] || 0) + r.cantidad; return acc; }, {})).map(([label, value]) => ({ label, value, color: estadoColor[label] || c.text }))
+        : [{ label: 'Variantes', value: rows.length, color: c.text }];
+      const cols = isInstrumentos
+        ? [{ label: 'Marca' }, { label: 'Pulgadas' }, { label: 'Tipo de caixa' }, { label: 'Estado' }, { label: 'Cantidad', right: s.thRight }, { label: 'Etiqueta' }]
+        : [{ label: 'Descripción' }, { label: 'Cantidad', right: s.thRight }, { label: 'Etiqueta' }];
+      const initials = gf.name.replace(/[^A-Za-zÀ-ÿ]/g, '').slice(0, 2).toUpperCase();
+      const subtitle = `${rows.length} ${rows.length === 1 ? 'variante' : 'variantes'} en stock`;
+      return { name: gf.name, isInstrumentos, rows, total, metricCards, initials, subtitle,
+        cols: cols.map(col => ({ label: col.label, right: col.right || s.th })),
+        addLabel: isInstrumentos ? '+ Agregar variante' : '+ Agregar repuesto',
+        onAdd: () => isInstrumentos ? this.openAddInstrumento(gf.name) : this.openAddRepuesto(gf.name) };
+    })();
+    const draftInst = st.draftInst;
+    const draftRep = st.draftRep;
+    const tipoQuery = (draftInst.tipo || '').trim().toLowerCase();
+    const tipoComboOptions = allTipos.filter(t => t.toLowerCase().includes(tipoQuery)).map(t => ({ label: t, onClick: () => this.setState({ draftInst: { ...this.state.draftInst, tipo: t }, tipoComboOpen: false }) }));
+    const tipoComboShowCreate = tipoQuery.length > 0 && !allTipos.some(t => t.toLowerCase() === tipoQuery);
+
+    const statusBadge = (label, kind) => {
+      const map = { ok: [c.successBg, c.successText], warn: [c.warningBg, c.warningText], bad: [c.dangerBg, c.dangerText] };
+      const [bg, tx] = map[kind];
+      return { text: label, style: `display:inline-flex;align-items:center;height:20px;font-size:11px;font-weight:500;letter-spacing:-0.005em;padding:0 7px;border-radius:999px;border:1px solid ${bg};background:${bg};color:${tx};white-space:nowrap;` };
+    };
+    const ritmistasEdRaw = st.ritmistasEdRaw;
+    const stLabel = { ok: 'Confirmado', warn: 'En duda', bad: 'No confirmado' };
+    const naipeGroupOf = (naipe) => naipe.startsWith('Caixa') ? 'Caixas' : naipe.startsWith('Repique') ? 'Repiques' : naipe.startsWith('Surdo') ? 'Surdos' : naipe.startsWith('Tamborim') ? 'Tamborins' : naipe;
+    const money = (n) => `$${n.toLocaleString('es-AR')}`;
+    const ritmistasEd = ritmistasEdRaw
+      .filter(r => st.naipeFilterEd === 'Todos' || naipeGroupOf(r.naipe) === st.naipeFilterEd)
+      .filter(r => st.estadoFilterEd === 'Todos' || stLabel[r.st] === st.estadoFilterEd)
+      .map((r, i) => {
+        const b = statusBadge(stLabel[r.st], r.st);
+        const phoneDigits = r.dni.replace(/\D/g, '');
+        const naipeAbbr = { Caixas: 'CX', Repiques: 'RP', Surdos: 'SD', Tamborins: 'TB', Chocalho: 'CH', Frigideiras: 'FR', Cuicas: 'CU' }[naipeGroupOf(r.naipe)] || 'RT';
+        const debt = r.total - r.pagado;
+        const entregado = r.st !== 'bad';
+        return { ...r, n: i + 1, rid: `${naipeAbbr}-${String(i + 1).padStart(2, '0')}`, status: b.text, statusStyle: b.style, waLink: `https://wa.me/549${phoneDigits}`, mailLink: `mailto:${r.dni.replace(/\D/g, '')}@bossa.app`,
+          trajeSummary: `${money(r.pagado)} / ${money(r.total)}`,
+          rifasSummary: `${r.rifasVendidas}/${r.rifasAsignadas} vendidas · ${money(r.rifasRendido)}`,
+          saldoLabel: debt > 0 ? `-${money(debt)}` : '$0',
+          saldoStyle: `font-family:'Geist Mono',monospace;font-size:13px;font-weight:600;color:${debt > 0 ? c.danger : c.success};`,
+          entregaLabel: entregado ? 'Entregado' : 'Pendiente',
+          entregaStyle: `font-size:12px;font-weight:600;color:${entregado ? c.success : c.warning};`,
+          onOpen: () => this.setState({ fichaOpen: { type: 'ed', data: r } }) };
+      });
+
+    const presupuestoItems = [
+      { name: 'Indumentaria', prioridad: 'Prioridad alta', monto: '$260.000' },
+      { name: 'Transporte', prioridad: 'Prioridad alta', monto: '$120.000' },
+      { name: 'Alquiler de instrumentos', prioridad: 'Prioridad media', monto: '$180.000' },
+      { name: 'Catering ensayos', prioridad: 'Prioridad baja', monto: '$60.000' }
+    ];
+
+    const eventDays = { 5: 'Ensayo', 12: 'Reunión', 14: 'Ensayo general', 21: 'Desfile', 28: 'Ensayo' };
+    const calendarDays = Array.from({ length: 30 }, (_, i) => {
+      const num = i + 1;
+      const ev = eventDays[num];
+      return {
+        num,
+        cellStyle: `background:${c.surface};border:1px solid ${c.border};border-radius:10px;padding:8px 6px;min-height:60px;`,
+        numStyle: `font-size:12px;font-weight:600;color:${c.textMuted};margin-bottom:4px;`,
+        event: ev,
+        eventStyle: `font-size:10px;font-weight:700;background:${c.primarySoft};color:${c.text};border-radius:6px;padding:3px 5px;`
+      };
+    });
+
+    const palette = ['#00723F', '#1E5FBF', '#C4302B', '#B4790A', '#6B3FA0', '#0D1F1B', '#D64A8A', '#0EA5A5'];
+    const colorOptions = palette.map(hex => ({
+      onClick: () => this.setState({ primaryColor: hex }),
+      swatchStyle: `width:30px;height:30px;border-radius:50%;background:${hex};border:2px solid ${hex === primary ? c.text : 'transparent'};cursor:pointer;padding:0;`
+    }));
+
+    const iconSvg = (d) => ({ __html: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${d}</svg>` });
+    const bottomNavItems = (isDb ? [
+      { key: 'naipes', label: 'Naipes', icon: '<rect x="3" y="4" width="18" height="5" rx="1.5"/><rect x="3" y="11" width="18" height="5" rx="1.5"/>' },
+      { key: 'ritmistasDb', label: 'Ritmistas', icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>' },
+      { key: 'inventario', label: 'Inventario', icon: '<path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v9l9 5 9-5V8"/>' }
+    ] : [
+      { key: 'dashboard', label: 'Dashboard', icon: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/>' },
+      { key: 'ritmistasEd', label: 'Ritmistas', icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>' },
+      { key: 'presupuesto', label: 'Presup.', icon: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 9h18"/>' },
+      { key: 'agenda', label: 'Agenda', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/>' }
+    ]).map(item => {
+      const active = st.section === item.key;
+      return {
+        onClick: () => this.setState({ section: item.key }),
+        label: item.label,
+        iconHtml: iconSvg(item.icon),
+        style: `flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;border:none;padding:6px 2px;color:${active ? c.primary : c.textMuted};cursor:pointer;`
+      };
+    });
+
+    const TRANSPARENT_PX = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+    const hasLogo = !!st.logoDataUrl;
+    const logoSrc = st.logoDataUrl || TRANSPARENT_PX;
+    const logoBg = `background-image:url(${logoSrc});background-size:contain;background-position:center;background-repeat:no-repeat;`;
+    const logoImgStyleSidebar = `width:30px;height:30px;border-radius:6px;${logoBg}${hasLogo ? '' : 'display:none;'}`;
+    const logoImgStyleMobile = `width:24px;height:24px;border-radius:6px;${logoBg}${hasLogo ? '' : 'display:none;'}`;
+    const logoImgStyleConfig = `width:100%;height:100%;${logoBg}${hasLogo ? '' : 'display:none;'}`;
+    const logoSvgStyle = hasLogo ? 'display:none;' : '';
+
+    return {
+      c, s, isDesktop: st.isDesktop, darkMode: dark, primaryColor: primary, logoDataUrl: st.logoDataUrl, hasLogo, logoSrc,
+      logoImgStyleSidebar, logoImgStyleMobile, logoImgStyleConfig, logoSvgStyle, batteryName: st.batteryName,
+      module: st.module, isDb, isCarnaval, section: st.section, edition: st.edition,
+      sectionTitle, sectionSubtitle,
+      goModuleDb: () => this.go('db', 'naipes'), goModuleCarnaval: () => this.go('carnaval', 'dashboard'),
+      goNaipes: () => this.setState({ section: 'naipes' }), goRitmistasDb: () => this.setState({ section: 'ritmistasDb' }), goInventario: () => this.setState({ section: 'inventario' }),
+      goDashboard: () => this.setState({ section: 'dashboard' }), goRitmistasEd: () => this.setState({ section: 'ritmistasEd' }), goPresupuesto: () => this.setState({ section: 'presupuesto' }), goAgenda: () => this.setState({ section: 'agenda' }),
+      goConfig: () => this.setState({ section: 'config' }),
+      moduleBtnStyle: { db: moduleBtn(isDb), carnaval: moduleBtn(isCarnaval) },
+      moduleBtnStyleMobile: { db: moduleBtnMobile(isDb), carnaval: moduleBtnMobile(isCarnaval) },
+      navBtnStyle: {
+        naipes: navBtn(st.section === 'naipes'), ritmistasDb: navBtn(st.section === 'ritmistasDb'), inventario: navBtn(st.section === 'inventario'),
+        dashboard: navBtn(st.section === 'dashboard'), ritmistasEd: navBtn(st.section === 'ritmistasEd'), presupuesto: navBtn(st.section === 'presupuesto'), agenda: navBtn(st.section === 'agenda'),
+        config: navBtn(st.section === 'config')
+      },
+      navIconColor: {
+        naipes: navIcon(st.section === 'naipes'), ritmistasDb: navIcon(st.section === 'ritmistasDb'), inventario: navIcon(st.section === 'inventario'),
+        dashboard: navIcon(st.section === 'dashboard'), ritmistasEd: navIcon(st.section === 'ritmistasEd'), presupuesto: navIcon(st.section === 'presupuesto'), agenda: navIcon(st.section === 'agenda'),
+        config: navIcon(st.section === 'config')
+      },
+      prevEdition: () => this.setState({ edition: st.edition - 1 }), nextEdition: () => this.setState({ edition: st.edition + 1 }),
+      toggleDark: () => this.setState({ darkMode: !dark }), darkToggleLabel: dark ? '☀ Modo claro' : '🌙 Modo oscuro', darkToggleIcon: dark ? '☀' : '🌙',
+      fileInputRef: this.fileInputRef, triggerFileUpload: this.triggerFileUpload, onLogoUpload: this.onLogoUpload, clearLogo: this.clearLogo,
+      onCustomColor: this.onCustomColor, onNameChange: this.onNameChange,
+      naipeCards, naipeStatusCards, ritmistasDb, ritmistasEd, presupuestoItems, calendarDays, colorOptions, bottomNavItems,
+      inv, invIsInstrumentos, instrumentos, repuestos,
+      showInventarioList: st.section === 'inventario' && !st.invGroupFicha,
+      showInventarioGroupFicha: st.section === 'inventario' && !!st.invGroupFicha,
+      invGroupFicha: !!st.invGroupFicha, groupFicha, closeGroupFicha: this.closeGroupFicha,
+      setInvTabInstrumentos: this.setInvTabInstrumentos, setInvTabRepuestos: this.setInvTabRepuestos,
+      instrumentoDialogOpen: !!st.instrumentoDialogOpen,
+      instDialogTitle: st.instrumentoDialogOpen && st.instrumentoDialogOpen.mode === 'edit' ? 'Editar instrumento' : 'Nuevo instrumento',
+      draftInst, tipoComboOpen: st.tipoComboOpen, tipoComboOptions, tipoComboShowCreate,
+      closeInstrumentoDialog: this.closeInstrumentoDialog, saveInstrumento: this.saveInstrumento,
+      onTipoInputChange: this.onTipoInputChange, onTipoFocus: this.onTipoFocus, onCreateTipo: this.onCreateTipo,
+      onDraftInstTipoCaixa: this.onDraftInstField('tipoCaixa'), onDraftInstMarca: this.onDraftInstField('marca'), onDraftInstPulgadas: this.onDraftInstField('pulgadas'),
+      onDraftInstEstado: this.onDraftInstField('estado'), onDraftInstCantidad: this.onDraftInstField('cantidad'), onDraftInstEtiqueta: this.onDraftInstField('etiqueta'), onDraftInstPrioridad: this.onDraftInstField('prioridad'),
+      repuestoDialogOpen: !!st.repuestoDialogOpen,
+      repDialogTitle: st.repuestoDialogOpen && st.repuestoDialogOpen.mode === 'edit' ? 'Editar repuesto' : 'Nuevo repuesto',
+      draftRep,
+      closeRepuestoDialog: this.closeRepuestoDialog, saveRepuesto: this.saveRepuesto,
+      onDraftRepCategoria: (e) => this.setState({ draftRep: { ...this.state.draftRep, categoria: e.target.value } }),
+      onDraftRepDescripcion: (e) => this.setState({ draftRep: { ...this.state.draftRep, descripcion: e.target.value } }),
+      onDraftRepCantidad: (e) => this.setState({ draftRep: { ...this.state.draftRep, cantidad: e.target.value } }),
+      onDraftRepEtiqueta: (e) => this.setState({ draftRep: { ...this.state.draftRep, etiqueta: e.target.value } }),
+      onDraftRepPrioridad: (e) => this.setState({ draftRep: { ...this.state.draftRep, prioridad: e.target.value } }),
+      fichaOpen: !!st.fichaOpen,
+      showRitmistasDb: st.section === 'ritmistasDb' && !st.fichaOpen,
+      showRitmistasEd: st.section === 'ritmistasEd' && !st.fichaOpen,
+      fichaTab: st.fichaTab,
+      showTabIndumentaria: st.fichaTab === 'indumentaria',
+      showTabRifas: st.fichaTab === 'rifas',
+      ritmistasStats: (() => {
+        const naipeGroupOf2 = (naipe) => naipe.startsWith('Caixa') ? 'Caixas' : naipe.startsWith('Repique') ? 'Repiques' : naipe.startsWith('Surdo') ? 'Surdos' : naipe.startsWith('Tamborim') ? 'Tamborins' : naipe;
+        const all = st.ritmistasEdRaw.filter(r => st.naipeFilterEd === 'Todos' || naipeGroupOf2(r.naipe) === st.naipeFilterEd);
+        const confirmados = all.filter(r => r.st === 'ok').length;
+        const enDuda = all.filter(r => r.st === 'warn').length;
+        const noConfirmados = all.filter(r => r.st === 'bad').length;
+        const naipeStatName = naipeOptions[st.naipeStatIndex % naipeOptions.length];
+        const naipeStatCount = st.ritmistasEdRaw.filter(r => naipeGroupOf2(r.naipe) === naipeStatName).length;
+        const estadoStats = [
+          { name: 'Confirmado', count: confirmados, color: c.success },
+          { name: 'En duda', count: enDuda, color: c.warning },
+          { name: 'No confirmado', count: noConfirmados, color: c.danger }
+        ];
+        const es = estadoStats[st.estadoStatIndex % estadoStats.length];
+        const deudaTotal = all.reduce((sum, r) => sum + Math.max(r.total - r.pagado, 0), 0);
+        return {
+          total: all.length, confirmados, enDuda, noConfirmados, naipeStatName, naipeStatCount, estadoStatName: es.name, estadoStatCount: es.count, estadoStatColor: es.color,
+          enDudaMasNo: enDuda + noConfirmados, deudaTotal: `$${deudaTotal.toLocaleString('es-AR')}`
+        };
+      })(),
+      prevNaipeStat: () => this.setState({ naipeStatIndex: (st.naipeStatIndex - 1 + naipeOptions.length) % naipeOptions.length }),
+      nextNaipeStat: () => this.setState({ naipeStatIndex: (st.naipeStatIndex + 1) % naipeOptions.length }),
+      prevEstadoStat: () => this.setState({ estadoStatIndex: (st.estadoStatIndex - 1 + 3) % 3 }),
+      nextEstadoStat: () => this.setState({ estadoStatIndex: (st.estadoStatIndex + 1) % 3 }),
+      onEstadoFilterEdChange: (e) => this.setState({ estadoFilterEd: e.target.value === 'Todos los estados' ? 'Todos' : e.target.value }),
+      filterPendientes: () => this.setState({ estadoFilterEd: 'No confirmado' }),
+      estadoFilterChipsEd: ['Todos', 'Confirmado', 'En duda', 'No confirmado'].map(opt => {
+        const count = opt === 'Todos' ? st.ritmistasEdRaw.length : st.ritmistasEdRaw.filter(r => ({ ok: 'Confirmado', warn: 'En duda', bad: 'No confirmado' }[r.st]) === opt).length;
+        const active = st.estadoFilterEd === opt;
+        return {
+          label: `${opt} · ${count}`,
+          onClick: () => this.setState({ estadoFilterEd: opt }),
+          style: `background:${active ? c.text : 'transparent'};color:${active ? c.bg : c.textMuted};border:1px solid ${active ? c.text : c.border};border-radius:7px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;`
+        };
+      }),
+      ficha: (() => {
+        const f = this.buildFicha(st.fichaOpen, c, statusBadge, stLabel);
+        const tabBtn = (active) => `background:transparent;border:none;border-bottom:2px solid ${active ? c.primary : 'transparent'};padding:10px 0;font-size:13px;font-weight:700;color:${active ? c.text : c.textMuted};cursor:pointer;`;
+        f.tabStyle = { indumentaria: tabBtn(st.fichaTab === 'indumentaria'), rifas: tabBtn(st.fichaTab === 'rifas'), historial: tabBtn(st.fichaTab === 'historial') };
+        return f;
+      })(),
+      setTabIndumentaria: () => this.setState({ fichaTab: 'indumentaria' }),
+      setTabRifas: () => this.setState({ fichaTab: 'rifas' }),
+      setTabHistorial: () => this.setState({ fichaTab: 'historial' }),
+      closeFicha: () => this.setState({ fichaOpen: null }),
+      stopClick: (e) => e.stopPropagation(),
+      naipeFilterChipsDb, naipeFilterChipsEd, naipeOptions,
+      editingFicha: st.editingFicha, draft: st.draft,
+      startEditFicha: this.startEditFicha, cancelEditFicha: this.cancelEditFicha, saveFicha: this.saveFicha,
+      onDraftName: this.onDraftChange('name'), onDraftDni: this.onDraftChange('dni'), onDraftTelefono: this.onDraftChange('telefono'),
+      onDraftNacimiento: this.onDraftChange('nacimientoIso'), onDraftTalle: this.onDraftChange('talleRemera'), onDraftCalzado: this.onDraftChange('calzado'),
+      onDraftNaipe: this.onDraftChange('naipe'), onDraftTotal: this.onDraftChange('total', true), onDraftPagado: this.onDraftChange('pagado', true),
+      onDraftRifasAsignadas: this.onDraftChange('rifasAsignadas', true), onDraftRifasVendidas: this.onDraftChange('rifasVendidas', true), onDraftRifasRendido: this.onDraftChange('rifasRendido', true),
+      addRitmistaOpen: st.addRitmistaOpen,
+      openAddRitmista: () => this.setState({ addRitmistaOpen: true }),
+      closeAddRitmista: () => this.setState({ addRitmistaOpen: false }),
+      newNaipe: st.newNaipe,
+      onNewNaipeChange: (e) => this.setState({ newNaipe: e.target.value }),
+      newSubtipoOptions: Component.subtipos[st.newNaipe] || []
+    };
+  }
+}
+
+</script>
+</body>
+</html>

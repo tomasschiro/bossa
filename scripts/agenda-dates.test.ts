@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { cumpleEnAnio, fechaCumple, fechaValida, hoyArgentina, recordatorios, type EventoAgenda } from '../src/lib/agenda-utils';
+assert.equal(hoyArgentina(new Date('2026-09-05T01:00:00Z')), '2026-09-04');
+assert.equal(fechaValida('2026-02-30'),false);
+assert.equal(fechaCumple('2000-02-29',2027),'2027-02-28');
+assert.equal(fechaCumple('2000-02-29',2028),'2028-02-29');
+assert.equal(cumpleEnAnio({id:'a',nombre:'Test',nacimiento:'2000-02-29'},2027)?.detalle,'Cumple 27 años');
+const birthday={id:'b',nombre:'Enero',nacimiento:'2000-01-02'};
+assert.equal(recordatorios([], [birthday], '2026-12-29')[0]?.dias,4);
+assert.equal(recordatorios([], [birthday], '2027-01-02')[0]?.dias,0);
+assert.equal(recordatorios([], [birthday], '2027-01-03').length,0);
+const event:EventoAgenda={id:'e',edicionId:'e',titulo:'Vencimiento',tipo:'fechaClave',fecha:'2026-09-11',hora:null,lugar:null,descripcion:null,recordarDiasAntes:7,cancelado:false,registradoPor:'Test',actualizadoPor:null};
+assert.equal(recordatorios([event],[],'2026-09-04').length,1);
+assert.equal(recordatorios([event],[],'2026-09-03').length,0);
+assert.equal(recordatorios([event],[],'2026-09-12').length,0);
+assert.equal(recordatorios([{...event,cancelado:true}],[],'2026-09-04').length,0);
+console.log('PASS fechas de Argentina, fechas inválidas, cumpleaños, cambio de año, año bisiesto y ventana de alertas');

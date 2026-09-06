@@ -1,0 +1,1 @@
+ALTER TABLE "ediciones" ADD COLUMN "planNaipes" JSONB NOT NULL DEFAULT '{}';

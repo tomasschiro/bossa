@@ -1,0 +1,4 @@
+import { Clock3 } from "lucide-react";
+export function ModulePlaceholder({ title, description }: { title: string; description: string }) {
+  return <div className="space-y-6"><header className="border-b border-border pb-4"><h1 className="text-2xl font-extrabold tracking-tight">{title}</h1><p className="mt-1 text-sm text-fg-secondary">{description}</p></header><div className="mx-auto flex max-w-xl flex-col items-center rounded-2xl border border-dashed border-border bg-card/60 px-6 py-12 text-center"><span className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-bg-subtle text-fg-secondary"><Clock3 className="size-5" /></span><h2 className="text-base font-semibold">Este módulo está en preparación</h2><p className="mt-2 max-w-sm text-sm leading-relaxed text-fg-secondary">Las herramientas de {title.toLowerCase()} estarán disponibles acá cuando se complete su desarrollo.</p></div></div>;
+}
