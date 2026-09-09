@@ -43,7 +43,7 @@ export function naipeGroupOf(naipe: string): Naipe {
     ["Caixa", "Caixas"],
     ["Repique", "Repiques"],
     ["Surdo", "Surdos"],
-    ["Tamborim", "Tamborins"],
+    ["Tamborim", "Tamborines"],
     ["Chocalho", "Chocalho"],
     ["Frigideira", "Frigideiras"],
     ["Cuica", "Cuicas"],
@@ -57,7 +57,7 @@ export function naipeAbbr(naipe: string): string {
     Caixas: "CX",
     Repiques: "RP",
     Surdos: "SD",
-    Tamborins: "TB",
+    Tamborines: "TB",
     Chocalho: "CH",
     Frigideiras: "FR",
     Cuicas: "CU",
@@ -69,15 +69,16 @@ export function totalMovimientos(re: RitmistaEdicion): number {
   return re.movimientos.reduce((sum, m) => sum + m.monto, 0);
 }
 
+/** "rifa" cuenta como pago: una venta de beneficio distribuido aplicada a la deuda del ritmista. */
 export function pagadoMovimientos(re: RitmistaEdicion): number {
   return re.movimientos
-    .filter((m) => m.tipo === "pago")
+    .filter((m) => m.tipo === "pago" || m.tipo === "rifa")
     .reduce((sum, m) => sum + m.monto, 0);
 }
 
 export function saldoPendiente(re: RitmistaEdicion): number {
   const total = re.movimientos
-    .filter((m) => m.tipo !== "pago")
+    .filter((m) => m.tipo !== "pago" && m.tipo !== "rifa")
     .reduce((sum, m) => sum + m.monto, 0);
   const pagado = pagadoMovimientos(re);
   return Math.max(total - pagado, 0);
@@ -85,7 +86,7 @@ export function saldoPendiente(re: RitmistaEdicion): number {
 
 export function totalDeuda(re: RitmistaEdicion): number {
   const total = re.movimientos
-    .filter((m) => m.tipo !== "pago")
+    .filter((m) => m.tipo !== "pago" && m.tipo !== "rifa")
     .reduce((sum, m) => sum + m.monto, 0);
   return total;
 }

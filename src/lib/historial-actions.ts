@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { requireBateria } from "./session";
-import { mapRitmista, mapRitmistaEdicion } from "./mappers";
+import { mapRitmista, mapRitmistaEdicion, mapCajaMovimiento } from "./mappers";
 import type { Ritmista, RitmistaEdicion } from "./types";
 import { saldoCaja } from "./presupuesto-utils";
 
@@ -42,7 +42,7 @@ export async function getHistorialEdiciones(): Promise<HistorialEdicion[]> {
       for (const row of movimientosCuenta) {
         const entry = porRitmista.get(row.ritmistaEdicionId) ?? { total: 0, pagado: 0 };
         const monto = Number(row._sum.monto ?? 0);
-        if (row.tipo === "pago") entry.pagado += monto;
+        if (row.tipo === "pago" || row.tipo === "rifa") entry.pagado += monto;
         else entry.total += monto;
         porRitmista.set(row.ritmistaEdicionId, entry);
       }
@@ -97,14 +97,9 @@ export async function getCajaHistorial(edicionId: string) {
     where: { edicionId },
     orderBy: { fecha: "asc" },
   });
-  const mapped = movimientos.map((m) => ({
-    id: m.id,
-    tipo: m.tipo,
-    categoria: m.categoria,
-    concepto: m.concepto,
-    monto: Number(m.monto),
-    fecha: m.fecha.toISOString().slice(0, 10),
-    registradoPor: m.registradoPor,
-  }));
+  const mapped = movimientos.map((m) => {
+    const ui = mapCajaMovimiento(m);
+    return { id: ui.id, tipo: ui.tipo, categoria: ui.categoria, concepto: ui.concepto, monto: ui.monto, fecha: ui.fechaIso, registradoPor: ui.registradoPor };
+  });
   return { anioCarnaval: edicion.anioCarnaval, movimientos: mapped, saldo: saldoCaja(mapped) };
 }

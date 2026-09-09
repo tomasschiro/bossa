@@ -67,7 +67,8 @@ try {
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
 
   // 4. Editar cantidad y estado de un instrumento existente
-  await page.getByRole('button', { name: /Editar Caixa/ }).first().click();
+  await page.getByText('Caixa', { exact: true }).first().click();
+  await page.getByRole('button', { name: 'Editar', exact: true }).first().click();
   await page.getByRole('dialog').waitFor();
   await page.getByRole('dialog').locator('input[type="number"]').first().fill('5');
   await page.getByRole('dialog').getByRole('combobox').filter({ hasText: 'Bueno' }).click();
@@ -81,20 +82,26 @@ try {
   await page.reload();
   await page.getByRole('heading', { name: 'Inventario', exact: true }).waitFor();
   await page.getByText('Ganzá', { exact: true }).first().waitFor();
+  await page.getByText('Caixa', { exact: true }).first().click();
   await page.getByText('Regular', { exact: true }).first().waitFor();
+  await page.getByRole('button', { name: 'Volver a Inventario', exact: true }).click();
   pass('Datos de instrumentos persisten tras reload completo');
 
   // 6. Alta corta de Repuesto
   await page.getByRole('tab', { name: 'Repuestos', exact: true }).click();
   await page.getByRole('button', { name: '+ Agregar repuesto', exact: true }).click();
-  await page.getByPlaceholder('Ej. Cuero de caixa 14"').fill('Cuero 14 pulgadas');
+  await page.getByRole('dialog').getByRole('combobox').first().click();
+  await page.getByPlaceholder('Buscar o crear categoría...').fill('Cueros');
+  await page.getByRole('option', { name: '+ Crear "Cueros"' }).click();
+  await page.getByPlaceholder('Nombre y detalle del repuesto').fill('Cuero 14 pulgadas');
   await page.getByRole('button', { name: 'Guardar repuesto', exact: true }).click();
   await page.getByRole('dialog').waitFor({ state: 'hidden' });
-  await page.getByText('Cuero 14 pulgadas', { exact: true }).first().waitFor();
+  await page.getByText('Cueros', { exact: true }).first().waitFor();
   pass('Repuesto creado');
 
   await page.reload();
   await page.getByRole('tab', { name: 'Repuestos', exact: true }).click();
+  await page.getByText('Cueros', { exact: true }).first().click();
   await page.getByText('Cuero 14 pulgadas', { exact: true }).first().waitFor();
   pass('Datos de repuestos persisten tras reload completo');
 

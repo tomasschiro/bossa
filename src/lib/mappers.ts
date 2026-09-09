@@ -7,6 +7,15 @@ import type {
   BeneficioMovimiento as PrismaBeneficio,
   Instrumento as PrismaInstrumento,
   Repuesto as PrismaRepuesto,
+  CajaMovimiento as PrismaCajaMovimiento,
+  PresupuestoGasto as PrismaPresupuestoGasto,
+  PresupuestoRubro as PrismaPresupuestoRubro,
+  Beneficio as PrismaBeneficioGeneral,
+  BeneficioGasto as PrismaBeneficioGasto,
+  BeneficioDistribuidoTipo as PrismaBeneficioDistribuidoTipo,
+  BeneficioDistribuidoVendedor as PrismaBeneficioDistribuidoVendedor,
+  BeneficioDistribuidoVenta as PrismaBeneficioDistribuidoVenta,
+  Prisma,
 } from "@prisma/client";
 import type {
   Ritmista,
@@ -24,7 +33,18 @@ import type {
   InstrumentoEstado,
   ItemEtiqueta,
   TipoCaixa,
+  CajaCategoriaUI,
+  CajaMovimiento,
+  PresupuestoGasto,
+  PresupuestoRubro,
+  PresupuestoRubroTipo,
+  BeneficioGasto,
+  BeneficioGeneral,
+  BeneficioDistribuidoTipo,
+  BeneficioDistribuidoVendedor,
+  BeneficioDistribuidoVenta,
 } from "./types";
+import { gananciaNetaBeneficio } from "./presupuesto-utils";
 
 const ESTADO_DB_TO_UI: Record<string, EstadoLlegada> = {
   Confirmado: "Confirmado",
@@ -198,5 +218,161 @@ export function mapRepuesto(r: PrismaRepuesto): Repuesto {
     etiqueta: r.etiqueta ? ETIQUETA_DB_TO_UI[r.etiqueta] : null,
     prioridad: r.prioridad,
     costoEstimado: r.costoEstimado ? Number(r.costoEstimado) : null,
+  };
+}
+
+// ---- Presupuesto ----
+
+const CAJA_CATEGORIA_DB_TO_UI: Record<string, CajaCategoriaUI> = {
+  General: "General",
+  FantasiaTematica: "Fantasía/temática",
+  Trajes: "Trajes",
+  Remeras: "Remeras",
+  InstrumentosRepuestos: "Instrumentos y repuestos",
+  EnsayosLogistica: "Ensayos/logística",
+  OtrosGastosGenerales: "Otros gastos generales",
+};
+
+export const CAJA_CATEGORIA_UI_TO_DB: Record<
+  CajaCategoriaUI,
+  "General" | "FantasiaTematica" | "Trajes" | "Remeras" | "InstrumentosRepuestos" | "EnsayosLogistica" | "OtrosGastosGenerales"
+> = {
+  General: "General",
+  "Fantasía/temática": "FantasiaTematica",
+  Trajes: "Trajes",
+  Remeras: "Remeras",
+  "Instrumentos y repuestos": "InstrumentosRepuestos",
+  "Ensayos/logística": "EnsayosLogistica",
+  "Otros gastos generales": "OtrosGastosGenerales",
+};
+
+export function mapCajaMovimiento(m: PrismaCajaMovimiento): CajaMovimiento {
+  return {
+    id: m.id,
+    tipo: m.tipo,
+    categoria: CAJA_CATEGORIA_DB_TO_UI[m.categoria],
+    concepto: m.concepto,
+    monto: Number(m.monto),
+    fechaIso: toIso(m.fecha),
+    esTraspaso: m.esTraspaso,
+    registradoPor: m.registradoPor,
+  };
+}
+
+export function mapPresupuestoGasto(g: PrismaPresupuestoGasto): PresupuestoGasto {
+  return {
+    id: g.id,
+    categoria: g.categoria,
+    concepto: g.concepto,
+    costoUnidad: Number(g.costoUnidad),
+    cantidad: g.cantidad,
+    monto: Number(g.monto),
+    fechaIso: toIso(g.fecha),
+    cajaMovimientoId: g.cajaMovimientoId,
+    registradoPor: g.registradoPor,
+  };
+}
+
+export function mapPresupuestoRubro(
+  r: PrismaPresupuestoRubro & { gastos: PrismaPresupuestoGasto[] },
+): PresupuestoRubro {
+  return {
+    rubro: r.rubro as PresupuestoRubroTipo,
+    montoEstimado: Number(r.montoEstimado),
+    gastos: r.gastos.map(mapPresupuestoGasto),
+  };
+}
+
+export function mapBeneficioGastoItem(g: PrismaBeneficioGasto): BeneficioGasto {
+  return { id: g.id, concepto: g.concepto, costoUnidad: Number(g.costoUnidad), cantidad: g.cantidad, monto: Number(g.monto) };
+}
+
+export function mapBeneficioGeneral(
+  b: PrismaBeneficioGeneral & { gastos: PrismaBeneficioGasto[] },
+): BeneficioGeneral {
+  const gastos = b.gastos.map(mapBeneficioGastoItem);
+  return {
+    id: b.id,
+    nombre: b.nombre,
+    fechaIso: toIso(b.fecha),
+    objetivoRecaudacion: b.objetivoRecaudacion ? Number(b.objetivoRecaudacion) : null,
+    ingresoBruto: Number(b.ingresoBruto),
+    gastos,
+    gananciaNeta: gananciaNetaBeneficio(Number(b.ingresoBruto), gastos),
+    agendaEventoId: b.agendaEventoId,
+    cajaMovimientoId: b.cajaMovimientoId,
+    registradoPor: b.registradoPor,
+  };
+}
+
+export function mapBeneficioDistribuidoVenta(
+  v: PrismaBeneficioDistribuidoVenta & { cajaMovimiento?: { monto: Prisma.Decimal } | null },
+): BeneficioDistribuidoVenta {
+  return {
+    id: v.id,
+    unidades: v.unidades,
+    monto: Number(v.monto),
+    montoEnCaja: v.cajaMovimiento ? Number(v.cajaMovimiento.monto) : null,
+    fechaIso: toIso(v.fecha),
+    movimientoCuentaCorrienteId: v.movimientoCuentaCorrienteId,
+    cajaMovimientoId: v.cajaMovimientoId,
+    registradoPor: v.registradoPor,
+  };
+}
+
+export function mapBeneficioDistribuidoVendedor(
+  v: PrismaBeneficioDistribuidoVendedor & {
+    ventas: PrismaBeneficioDistribuidoVenta[];
+    ritmistaEdicion?: (PrismaRitmistaEdicion & { ritmista: PrismaRitmista; movimientos: PrismaMovimiento[] }) | null;
+  },
+  saldoPendienteFn?: (re: RitmistaEdicion) => number,
+): BeneficioDistribuidoVendedor {
+  let ritmistaNombre: string | null = null;
+  let ritmistaSaldoPendiente: number | null = null;
+  if (v.ritmistaEdicion) {
+    ritmistaNombre = `${v.ritmistaEdicion.ritmista.nombre} ${v.ritmistaEdicion.ritmista.apellido}`;
+    if (saldoPendienteFn) {
+      ritmistaSaldoPendiente = saldoPendienteFn({
+        id: v.ritmistaEdicion.id,
+        ritmistaId: v.ritmistaEdicion.ritmistaId,
+        edicionAnio: 0,
+        naipe: v.ritmistaEdicion.naipe,
+        estadoLlegada: ESTADO_DB_TO_UI[v.ritmistaEdicion.estadoLlegada],
+        movimientos: v.ritmistaEdicion.movimientos.map(mapMovimiento),
+        entregas: [],
+        beneficiosAsignados: v.ritmistaEdicion.beneficiosAsignados,
+        beneficiosVendidos: v.ritmistaEdicion.beneficiosVendidos,
+        beneficios: [],
+      });
+    }
+  }
+  return {
+    id: v.id,
+    tipoId: v.tipoId,
+    ritmistaEdicionId: v.ritmistaEdicionId,
+    ritmistaNombre,
+    ritmistaSaldoPendiente,
+    nombreExterno: v.nombreExterno,
+    contactoExterno: v.contactoExterno,
+    unidadesAsignadas: v.unidadesAsignadas,
+    ventas: v.ventas.map(mapBeneficioDistribuidoVenta),
+  };
+}
+
+export function mapBeneficioDistribuidoTipo(
+  t: PrismaBeneficioDistribuidoTipo & {
+    vendedores: (PrismaBeneficioDistribuidoVendedor & {
+      ventas: PrismaBeneficioDistribuidoVenta[];
+      ritmistaEdicion?: (PrismaRitmistaEdicion & { ritmista: PrismaRitmista; movimientos: PrismaMovimiento[] }) | null;
+    })[];
+  },
+  saldoPendienteFn?: (re: RitmistaEdicion) => number,
+): BeneficioDistribuidoTipo {
+  return {
+    id: t.id,
+    nombre: t.nombre,
+    precioUnidad: Number(t.precioUnidad),
+    fechaLimiteIso: toIso(t.fechaLimite),
+    vendedores: t.vendedores.map((v) => mapBeneficioDistribuidoVendedor(v, saldoPendienteFn)),
   };
 }

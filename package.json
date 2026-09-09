@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint",
     "db:seed": "node --env-file=.env.local --import tsx prisma/seed.ts",
@@ -15,13 +16,18 @@
     "test:agenda": "node --import tsx scripts/agenda-dates.test.ts && node --env-file=.env.local scripts/agenda-smoke.mjs",
     "test:configuracion": "node --env-file=.env.local scripts/configuracion-smoke.mjs",
     "test:carnaval": "node --import tsx scripts/carnaval-dates.test.ts && node --env-file=.env.local scripts/carnaval-smoke.mjs",
-    "test:naipes-plan": "node --import tsx scripts/naipes-plan.test.ts && node --env-file=.env.local scripts/naipes-plan-smoke.mjs"
+    "test:naipes-plan": "node --import tsx scripts/naipes-plan.test.ts && node --env-file=.env.local scripts/naipes-plan-smoke.mjs",
+    "test:presupuesto": "node --env-file=.env.local scripts/presupuesto-smoke.mjs",
+    "test:dashboard": "node --env-file=.env.local scripts/dashboard-smoke.mjs",
+    "test:superadmin": "node --env-file=.env.local scripts/superadmin-smoke.mjs",
+    "test:logo": "node --env-file=.env.local scripts/logo-smoke.mjs"
   },
   "prisma": {
     "seed": "node --env-file=.env.local --import tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.12.0",
+    "@vercel/blob": "^2.8.0",
     "better-auth": "^1.7.2",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",

@@ -13,8 +13,10 @@ export async function prepararCarnaval(input: { anio: number; copiarRitmistas?: 
     const existente = await tx.edicion.findUnique({ where: { bateriaId_anioCarnaval: { bateriaId, anioCarnaval: input.anio } } });
     if (existente) throw new Error("Ya existe una edición para ese año.");
     const todas = await tx.edicion.findMany({ where: { bateriaId }, orderBy: { anioCarnaval: "desc" } });
+    // "Preparada" solo tiene sentido si hay una edición activa por delante de la cual
+    // prepararse; sin activa (recién se cerró la única existente), no hay ninguna.
     const activa = todas.find((e) => e.activa);
-    const preparada = todas.find((e) => !e.activa && (!activa || e.anioCarnaval > activa.anioCarnaval));
+    const preparada = activa && todas.find((e) => !e.activa && e.anioCarnaval > activa.anioCarnaval);
     if (preparada) throw new Error("Ya hay una edición preparada. Cerrá la activa antes de preparar otra.");
     if (input.anio <= (todas[0]?.anioCarnaval ?? 0)) throw new Error("La nueva edición debe ser posterior a la más reciente.");
     const nueva = await tx.edicion.create({ data: { bateriaId, anioCarnaval: input.anio, activa: false } });

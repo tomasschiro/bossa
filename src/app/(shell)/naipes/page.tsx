@@ -13,5 +13,5 @@ export default async function NaipesPage({ searchParams }: { searchParams: Promi
     getNaipes(),
     prisma.ritmista.groupBy({ by: ["naipeReferencia"], where: { bateriaId }, _count: { _all: true } }),
   ]);
-  return <div className="space-y-4"><NaipesPlan key={plan.edicion?.id ?? "sin-edicion"} data={plan} initialTab={params.vista}/ ><CatalogueSection><NaipesView naipes={naipes.map((n) => ({ id: n.id, nombre: n.nombre, cantidad: counts.find((c) => c.naipeReferencia === n.nombre)?._count._all ?? 0 }))} /></CatalogueSection></div>;
+  return <div className="space-y-4"><NaipesPlan key={plan.edicion?.id ?? "sin-edicion"} data={plan} initialTab={params.vista}/ ><CatalogueSection><NaipesView naipes={naipes.map((n) => ({ id: n.id, nombre: n.nombre, cantidad: counts.find((c) => c.naipeReferencia === n.nombre)?._count._all ?? 0, variantes: n.variantes.map((v) => ({ id: v.id, nombre: v.nombre })) }))} /></CatalogueSection></div>;
 }

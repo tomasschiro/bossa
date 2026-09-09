@@ -85,11 +85,27 @@ enum AgendaEventoTipo {
   presentacion
 }
 
+enum PresupuestoRubroTipo {
+  Fantasia
+  Remeras
+}
+
+enum CajaCategoria {
+  General
+  FantasiaTematica      @map("Fantasía/temática")
+  Trajes
+  Remeras
+  InstrumentosRepuestos @map("Instrumentos y repuestos")
+  EnsayosLogistica      @map("Ensayos/logística")
+  OtrosGastosGenerales  @map("Otros gastos generales")
+}
+
 model Bateria {
   id            String   @id @default(cuid())
   nombre        String
   comparsa      String?
   paletaColores Json?
+  logoUrl       String?
   createdAt     DateTime @default(now())
 
   membresias   Membresia[]
@@ -109,7 +125,22 @@ model Naipe {
   nombre    String
   orden     Int     @default(0)
 
+  variantes NaipeVariante[]
+
   @@map("naipes")
+}
+
+/// Subvariante de un naipe (ej. Caixa 12"/14", Surdo 1ra/2da/3ra), definida libremente
+/// por el director. Se usa como catálogo al desglosar el Objetivo en Ecualización y al
+/// pintar celdas en Formación.
+model NaipeVariante {
+  id      String @id @default(cuid())
+  naipeId String
+  naipe   Naipe  @relation(fields: [naipeId], references: [id], onDelete: Cascade)
+  nombre  String
+  orden   Int    @default(0)
+
+  @@map("naipe_variantes")
 }
 
 /// Padrón general — atemporal, sin año
@@ -164,21 +195,21 @@ model Instrumento {
 }
 
 model Repuesto {
-  id            String            @id @default(cuid())
+  id            String         @id @default(cuid())
   bateriaId     String
-  bateria       Bateria           @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
+  bateria       Bateria        @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
   categoria     String
   descripcion   String
-  cantidad      Int               @default(1)
+  cantidad      Int            @default(1)
   etiqueta      ItemEtiqueta?
   prioridad     ItemPrioridad?
-  costoEstimado Decimal?          @db.Decimal(12, 2)
+  costoEstimado Decimal?       @db.Decimal(12, 2)
 
   @@map("repuestos")
 }
 
 model Edicion {
-  planNaipes Json @default("{}")
+  planNaipes     Json      @default("{}")
   nochesCarnaval Json      @default("[]")
   ultimaNoche    DateTime? @db.Date
   id             String    @id @default(cuid())
@@ -188,10 +219,13 @@ model Edicion {
   activa         Boolean   @default(false)
   fechaCreacion  DateTime  @default(now())
 
-  ritmistasEdicion  RitmistaEdicion[]
-  stockIndumentaria StockIndumentaria[]
-  cajaMovimientos   CajaMovimiento[]
-  agendaEventos     AgendaEvento[]
+  ritmistasEdicion          RitmistaEdicion[]
+  stockIndumentaria         StockIndumentaria[]
+  cajaMovimientos           CajaMovimiento[]
+  agendaEventos             AgendaEvento[]
+  presupuestoRubros         PresupuestoRubro[]
+  beneficios                Beneficio[]
+  beneficioDistribuidoTipos BeneficioDistribuidoTipo[]
 
   @@unique([bateriaId, anioCarnaval])
   @@map("ediciones")
@@ -209,10 +243,10 @@ model RitmistaEdicion {
   beneficiosAsignados Int           @default(0)
   beneficiosVendidos  Int           @default(0)
 
-  movimientos MovimientoCuentaCorriente[]
-  entregas    EntregaIndumentaria[]
-  beneficios  BeneficioMovimiento[]
-  rifas       Rifa[]
+  movimientos                    MovimientoCuentaCorriente[]
+  entregas                       EntregaIndumentaria[]
+  beneficios                     BeneficioMovimiento[]
+  beneficioDistribuidoVendedores BeneficioDistribuidoVendedor[]
 
   @@unique([edicionId, ritmistaId])
   @@map("ritmistas_edicion")
@@ -229,6 +263,8 @@ model MovimientoCuentaCorriente {
   estado            MovimientoEstado
   registradoPor     String
   createdAt         DateTime         @default(now())
+
+  beneficioDistribuidoVenta BeneficioDistribuidoVenta?
 
   @@map("movimientos_cuenta_corriente")
 }
@@ -271,29 +307,136 @@ model StockIndumentaria {
   @@map("stock_indumentaria")
 }
 
-model Rifa {
-  id                String          @id @default(cuid())
-  ritmistaEdicionId String
-  ritmistaEdicion   RitmistaEdicion @relation(fields: [ritmistaEdicionId], references: [id], onDelete: Cascade)
-  numerosAsignados  Int             @default(0)
-  numerosVendidos   Int             @default(0)
-  montoPorNumero    Decimal         @db.Decimal(12, 2)
-
-  @@map("rifas")
-}
-
 model CajaMovimiento {
   id            String             @id @default(cuid())
   edicionId     String
   edicion       Edicion            @relation(fields: [edicionId], references: [id], onDelete: Cascade)
   tipo          CajaMovimientoTipo
-  categoria     String
+  categoria     CajaCategoria
   concepto      String
   monto         Decimal            @db.Decimal(12, 2)
   fecha         DateTime
+  esTraspaso    Boolean            @default(false)
   registradoPor String
 
+  presupuestoGasto          PresupuestoGasto?
+  beneficio                 Beneficio?
+  beneficioDistribuidoVenta BeneficioDistribuidoVenta?
+
   @@map("caja_movimientos")
+}
+
+model PresupuestoRubro {
+  id            String               @id @default(cuid())
+  edicionId     String
+  edicion       Edicion              @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  rubro         PresupuestoRubroTipo
+  montoEstimado Decimal              @default(0) @db.Decimal(12, 2)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  gastos PresupuestoGasto[]
+
+  @@unique([edicionId, rubro])
+  @@map("presupuesto_rubros")
+}
+
+model PresupuestoGasto {
+  id                 String           @id @default(cuid())
+  presupuestoRubroId String
+  presupuestoRubro   PresupuestoRubro @relation(fields: [presupuestoRubroId], references: [id], onDelete: Cascade)
+  categoria          String
+  concepto           String
+  costoUnidad        Decimal          @db.Decimal(12, 2)
+  cantidad           Int
+  monto              Decimal          @db.Decimal(12, 2)
+  fecha              DateTime
+  cajaMovimientoId   String?          @unique
+  cajaMovimiento     CajaMovimiento?  @relation(fields: [cajaMovimientoId], references: [id], onDelete: SetNull)
+  registradoPor      String
+  createdAt          DateTime         @default(now())
+
+  @@map("presupuesto_gastos")
+}
+
+model Beneficio {
+  id                  String          @id @default(cuid())
+  edicionId           String
+  edicion             Edicion         @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  nombre              String
+  fecha               DateTime
+  objetivoRecaudacion Decimal?        @db.Decimal(12, 2)
+  ingresoBruto        Decimal         @default(0) @db.Decimal(12, 2)
+  agendaEventoId      String?         @unique
+  agendaEvento        AgendaEvento?   @relation(fields: [agendaEventoId], references: [id], onDelete: SetNull)
+  cajaMovimientoId    String?         @unique
+  cajaMovimiento      CajaMovimiento? @relation(fields: [cajaMovimientoId], references: [id], onDelete: SetNull)
+  registradoPor       String
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  gastos BeneficioGasto[]
+
+  @@map("beneficios_generales")
+}
+
+model BeneficioGasto {
+  id          String    @id @default(cuid())
+  beneficioId String
+  beneficio   Beneficio @relation(fields: [beneficioId], references: [id], onDelete: Cascade)
+  concepto    String
+  costoUnidad Decimal   @db.Decimal(12, 2)
+  cantidad    Int
+  monto       Decimal   @db.Decimal(12, 2)
+
+  @@map("beneficio_gastos")
+}
+
+model BeneficioDistribuidoTipo {
+  id           String   @id @default(cuid())
+  edicionId    String
+  edicion      Edicion  @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  nombre       String
+  precioUnidad Decimal  @db.Decimal(12, 2)
+  fechaLimite  DateTime
+  createdAt    DateTime @default(now())
+
+  vendedores BeneficioDistribuidoVendedor[]
+
+  @@map("beneficio_distribuido_tipos")
+}
+
+model BeneficioDistribuidoVendedor {
+  id                String                   @id @default(cuid())
+  tipoId            String
+  tipo              BeneficioDistribuidoTipo @relation(fields: [tipoId], references: [id], onDelete: Cascade)
+  ritmistaEdicionId String?
+  ritmistaEdicion   RitmistaEdicion?         @relation(fields: [ritmistaEdicionId], references: [id], onDelete: Cascade)
+  nombreExterno     String?
+  contactoExterno   String?
+  unidadesAsignadas Int                      @default(0)
+  createdAt         DateTime                 @default(now())
+
+  ventas BeneficioDistribuidoVenta[]
+
+  @@map("beneficio_distribuido_vendedores")
+}
+
+model BeneficioDistribuidoVenta {
+  id                          String                       @id @default(cuid())
+  vendedorId                  String
+  vendedor                    BeneficioDistribuidoVendedor @relation(fields: [vendedorId], references: [id], onDelete: Cascade)
+  unidades                    Int?
+  monto                       Decimal                      @db.Decimal(12, 2)
+  fecha                       DateTime
+  movimientoCuentaCorrienteId String?                      @unique
+  movimientoCuentaCorriente   MovimientoCuentaCorriente?   @relation(fields: [movimientoCuentaCorrienteId], references: [id], onDelete: SetNull)
+  cajaMovimientoId            String?                      @unique
+  cajaMovimiento              CajaMovimiento?              @relation(fields: [cajaMovimientoId], references: [id], onDelete: SetNull)
+  registradoPor               String
+  createdAt                   DateTime                     @default(now())
+
+  @@map("beneficio_distribuido_ventas")
 }
 
 model AgendaEvento {
@@ -313,6 +456,8 @@ model AgendaEvento {
   lugar             String?
   descripcion       String?
 
+  beneficio Beneficio?
+
   @@index([edicionId, fecha])
   @@map("agenda_eventos")
 }
@@ -324,6 +469,7 @@ model Usuario {
   email         String      @unique
   emailVerified Boolean     @default(false)
   image         String?
+  esSuperAdmin  Boolean     @default(false)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   sessions      Session[]
@@ -384,6 +530,7 @@ model Verification {
 
 enum RolMembresia {
   director
+  admin
 }
 
 model Membresia {

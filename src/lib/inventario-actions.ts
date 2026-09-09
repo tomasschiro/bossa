@@ -20,7 +20,7 @@ import type {
 } from "./types";
 import { requireBateria } from "./session";
 
-interface InstrumentoInput {
+export interface InstrumentoInput {
   tipo: string;
   marca?: string | null;
   pulgadas?: number | null;
@@ -116,7 +116,7 @@ export async function eliminarInstrumento(id: string) {
   revalidatePath("/", "layout");
 }
 
-interface RepuestoInput {
+export interface RepuestoInput {
   categoria: CategoriaRepuesto;
   descripcion: string;
   cantidad: number;

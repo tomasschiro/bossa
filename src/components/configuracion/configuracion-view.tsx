@@ -1,13 +1,16 @@
 "use client";
 import { CarnavalSettings } from "./carnaval-settings";
-import { useId, useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { useId, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, Palette, UserRound, LockKeyhole, ChevronDown } from "lucide-react";
+import { Building2, Palette, UserRound, LockKeyhole, ChevronDown, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { guardarBateria, guardarPaleta, guardarNombreUsuario, type getConfiguracion } from "@/lib/configuracion-actions";
+import { guardarBateria, guardarPaleta, guardarNombreUsuario, subirLogo, quitarLogo, type getConfiguracion } from "@/lib/configuracion-actions";
 import { PALETA_DEFAULT, colorValido, leerPaleta, textoSobreColor, type Paleta } from "@/lib/paleta";
 import { authClient } from "@/lib/auth-client";
+
+const ROL_LABEL: Record<string, string> = { director: "Director", admin: "Administrador" };
 
 type Data = Awaited<ReturnType<typeof getConfiguracion>>;
 function Notice({ value }: { value?: { error?: string; success?: string } }) { return value?.error ? <p role="alert" className="text-sm text-danger">{value.error}</p> : value?.success ? <p role="status" className="text-sm text-success">{value.success}</p> : null; }
@@ -30,6 +33,9 @@ export function ConfiguracionView({ data }: { data: Data }) {
   const [nombre, setNombre] = useState(data.bateria.nombre);
   const [comparsa, setComparsa] = useState(data.bateria.comparsa);
   const [paleta, setPaleta] = useState(data.bateria.paleta);
+  const [logoUrl, setLogoUrl] = useState(data.bateria.logoUrl);
+  const [logoPending, setLogoPending] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [userName, setUserName] = useState(data.user.nombre);
   const [notices, setNotices] = useState<Record<string, { error?: string; success?: string }>>({});
   const [pending, startTransition] = useTransition();
@@ -42,6 +48,33 @@ export function ConfiguracionView({ data }: { data: Data }) {
     event.preventDefault(); notice(key, {});
     startTransition(async () => { try { const result = await action(); notice(key, result.error ? { error: result.error } : { success }); if (!result.error) router.refresh(); } catch { notice(key, { error: "No se pudo guardar. Intentá nuevamente." }); } });
   }
+  function onElegirLogo(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const formData = new FormData();
+    formData.set("logo", file);
+    notice("logo", {}); setLogoPending(true);
+    startTransition(async () => {
+      try {
+        const result = await subirLogo(formData);
+        if ("error" in result) { notice("logo", { error: result.error }); return; }
+        setLogoUrl(result.logoUrl); notice("logo", { success: "Logo actualizado." }); router.refresh();
+      } catch { notice("logo", { error: "No se pudo subir el logo. Intentá nuevamente." }); }
+      finally { setLogoPending(false); }
+    });
+  }
+  function onQuitarLogo() {
+    notice("logo", {}); setLogoPending(true);
+    startTransition(async () => {
+      try {
+        const result = await quitarLogo();
+        if ("error" in result) { notice("logo", { error: result.error }); return; }
+        setLogoUrl(null); notice("logo", { success: "Logo eliminado." }); router.refresh();
+      } catch { notice("logo", { error: "No se pudo quitar el logo. Intentá nuevamente." }); }
+      finally { setLogoPending(false); }
+    });
+  }
   const preview = leerPaleta(paleta);
   return <div className="mx-auto max-w-3xl space-y-6 pb-6">
     <header className="space-y-2 pb-1"><h1 className="text-2xl font-extrabold tracking-tight">Configuración</h1><p className="text-sm text-fg-secondary">Ajustá la identidad de tu batería y los datos de tu cuenta.</p></header>
@@ -49,12 +82,33 @@ export function ConfiguracionView({ data }: { data: Data }) {
       <div className="space-y-3">
         <p className="px-1 text-[11px] font-semibold uppercase tracking-widest text-fg-tertiary">Tu batería</p>
         <SettingsSection title="Batería" description={data.bateria.comparsa || "Nombre e identidad de tu institución"} icon={<Building2 className="size-[18px]" />} defaultOpen>
-        <form aria-label="Datos de la batería" className={card} onSubmit={(e) => save(e, "bateria", () => guardarBateria({ nombre, comparsa }), "Datos de la batería guardados.")}>
-          <p className="text-sm text-fg-secondary">Estos datos son compartidos por los directores de esta batería.</p>
-          <div><label htmlFor="bateria-nombre" className={label}>Nombre de la batería</label><Input id="bateria-nombre" maxLength={100} required value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
-          <div><label htmlFor="bateria-comparsa" className={label}>Comparsa (opcional)</label><Input id="bateria-comparsa" maxLength={100} value={comparsa} onChange={(e) => setComparsa(e.target.value)} /></div>
-          <Notice value={notices.bateria} /><Button type="submit" disabled={pending}>Guardar batería</Button>
-        </form>
+        <div className="space-y-5">
+          <div>
+            <label className={label}>Logo de la institución</label>
+            <div className="flex items-center gap-4">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo de la batería" className="size-16 shrink-0 rounded-lg border border-border object-contain" />
+              ) : (
+                <span className="flex size-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-border text-fg-tertiary"><Building2 className="size-6" /></span>
+              )}
+              <div className="flex flex-col gap-2">
+                <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden" onChange={onElegirLogo} />
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" disabled={logoPending} onClick={() => fileInputRef.current?.click()}>{logoPending ? "Subiendo…" : "Subir logo"}</Button>
+                  {logoUrl && <Button type="button" variant="destructive" disabled={logoPending} onClick={onQuitarLogo}>Quitar logo</Button>}
+                </div>
+                <p className="text-xs text-fg-secondary">PNG, JPG, SVG o WebP, hasta 2 MB.</p>
+              </div>
+            </div>
+            <Notice value={notices.logo} />
+          </div>
+          <form aria-label="Datos de la batería" className={card} onSubmit={(e) => save(e, "bateria", () => guardarBateria({ nombre, comparsa }), "Datos de la batería guardados.")}>
+            <p className="text-sm text-fg-secondary">Estos datos son compartidos por los directores de esta batería.</p>
+            <div><label htmlFor="bateria-nombre" className={label}>Nombre de la batería</label><Input id="bateria-nombre" maxLength={100} required value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
+            <div><label htmlFor="bateria-comparsa" className={label}>Comparsa (opcional)</label><Input id="bateria-comparsa" maxLength={100} value={comparsa} onChange={(e) => setComparsa(e.target.value)} /></div>
+            <Notice value={notices.bateria} /><Button type="submit" disabled={pending}>Guardar batería</Button>
+          </form>
+        </div>
         </SettingsSection>
         <SettingsSection title="Colores" description="Personalizá la apariencia en modo claro y oscuro" icon={<Palette className="size-[18px]" />} trailing={<span className="hidden gap-1 sm:flex" aria-hidden="true">{Object.values(data.bateria.paleta).map((color, index) => <span key={index} className="size-4 rounded-full border border-black/10" style={{ background: color }} />)}</span>}>
         <form aria-label="Colores de la batería" className={card} onSubmit={(e) => save(e, "paleta", () => guardarPaleta(paleta), "Colores guardados y aplicados a tu batería.")}>
@@ -73,7 +127,8 @@ export function ConfiguracionView({ data }: { data: Data }) {
           <div><label htmlFor="cuenta-nombre" className={label}>Tu nombre</label><Input id="cuenta-nombre" autoComplete="name" maxLength={100} required value={userName} onChange={(e) => setUserName(e.target.value)} /><p className="mt-2 text-xs text-fg-secondary">Aparece como autor de pagos, entregas y cambios. Los registros históricos conservan su autor original.</p></div>
           <div><label htmlFor="cuenta-email" className={label}>Email de acceso</label><Input id="cuenta-email" type="email" readOnly value={data.user.email} autoComplete="username" /><p className="mt-2 text-xs text-fg-secondary">El email de acceso no se modifica desde esta pantalla.</p></div>
           <Notice value={notices.cuenta} /><Button type="submit" disabled={pending}>Guardar mi nombre</Button>
-          <div className="border-t border-border pt-4"><h3 className="text-sm font-semibold">Mis baterías</h3><ul className="mt-2 space-y-1">{data.membresias.map((m) => <li className="flex justify-between gap-2 text-sm" key={m.id}><span>{m.bateria}</span><span className="text-fg-secondary">Director</span></li>)}</ul></div>
+          <div className="border-t border-border pt-4"><h3 className="text-sm font-semibold">Mis baterías</h3><ul className="mt-2 space-y-1">{data.membresias.map((m) => <li className="flex justify-between gap-2 text-sm" key={m.id}><span>{m.bateria}</span><span className="text-fg-secondary">{ROL_LABEL[m.rol] ?? m.rol}</span></li>)}</ul></div>
+          {data.user.esSuperAdmin && <div className="border-t border-border pt-4"><Link href="/superadmin" className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"><ShieldCheck className="size-4" />Panel de superadmin</Link></div>}
         </form>
         </SettingsSection>
         <SettingsSection title="Contraseña" description="Protegé el acceso a tu cuenta" icon={<LockKeyhole className="size-[18px]" />}>

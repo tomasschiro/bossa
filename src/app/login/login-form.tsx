@@ -17,7 +17,7 @@ export function LoginForm() {
       try {
         const result = await authClient.signIn.email({ email: String(data.get("email")), password: String(data.get("password")) });
         if (result.error) { setError("Email o contraseña incorrectos. Intentá nuevamente."); setPending(false); return; }
-        window.location.assign("/ritmistas/carnaval");
+        window.location.assign("/");
       } catch { setError("No se pudo iniciar sesión. Intentá nuevamente."); setPending(false); }
     }}>
       <div><div className="mb-5 flex size-12 items-center justify-center rounded-2xl bg-primary/5"><BossaLogo size={32} /></div><h1 className="text-2xl font-extrabold">Bossa</h1><p className="mt-2 text-sm text-fg-secondary">Ingresá para gestionar tu batería.</p></div>

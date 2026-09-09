@@ -143,7 +143,7 @@ export function InventarioGroupFicha(props: InventarioGroupFichaProps) {
   );
 }
 
-function InstrumentoVariantesTable({
+export function InstrumentoVariantesTable({
   items,
   onEdit,
   onDelete,
@@ -226,7 +226,7 @@ function InstrumentoVariantesTable({
   );
 }
 
-function RepuestoVariantesTable({
+export function RepuestoVariantesTable({
   items,
   onEdit,
   onDelete,

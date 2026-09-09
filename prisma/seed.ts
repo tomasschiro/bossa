@@ -3,7 +3,7 @@ import { hashPassword } from "better-auth/crypto";
 
 const prisma = new PrismaClient();
 
-const NAIPES = ["Caixas", "Repiques", "Surdos", "Tamborins", "Chocalho", "Frigideiras", "Cuicas"];
+const NAIPES = ["Caixas", "Repiques", "Surdos", "Tamborines", "Chocalho", "Frigideiras", "Cuicas"];
 const EDICION_HISTORICA = 2026;
 const DIRECTOR_NOMBRE = "Tomás Schiro";
 
@@ -44,7 +44,7 @@ const ritmistasSeed = [
     nivel: "Avanzado" as const,
     talleRemera: "S",
     calzado: "36",
-    naipeReferencia: "Tamborins",
+    naipeReferencia: "Tamborines",
     historial: [{ naipe: "Tamborim", periodo: "2022–2026", desde: 2022 }],
   },
   {
@@ -309,7 +309,7 @@ async function main() {
 
   const usuario = await prisma.usuario.upsert({
     where: { email: "director@zumzum.com" }, update: {},
-    create: { email: "director@zumzum.com", nombre: DIRECTOR_NOMBRE },
+    create: { email: "director@zumzum.com", nombre: DIRECTOR_NOMBRE, esSuperAdmin: true },
   });
   await prisma.account.upsert({
     where: { issuer_accountId: { issuer: "local:credential", accountId: usuario.id } },

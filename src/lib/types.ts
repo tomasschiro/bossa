@@ -4,7 +4,7 @@ export const NAIPES: Naipe[] = [
   "Caixas",
   "Repiques",
   "Surdos",
-  "Tamborins",
+  "Tamborines",
   "Chocalho",
   "Frigideiras",
   "Cuicas",
@@ -14,7 +14,7 @@ export const NAIPE_ABBR: Record<Naipe, string> = {
   Caixas: "CX",
   Repiques: "RP",
   Surdos: "SD",
-  Tamborins: "TB",
+  Tamborines: "TB",
   Chocalho: "CH",
   Frigideiras: "FR",
   Cuicas: "CU",
@@ -158,4 +158,124 @@ export interface RitmistaEdicion {
   beneficiosAsignados: number;
   beneficiosVendidos: number;
   beneficios: BeneficioMovimiento[];
+}
+
+// ---- Presupuesto ----
+
+export type CajaCategoriaUI =
+  | "General"
+  | "Fantasía/temática"
+  | "Trajes"
+  | "Remeras"
+  | "Instrumentos y repuestos"
+  | "Ensayos/logística"
+  | "Otros gastos generales";
+
+export const CAJA_CATEGORIAS: CajaCategoriaUI[] = [
+  "General",
+  "Fantasía/temática",
+  "Trajes",
+  "Remeras",
+  "Instrumentos y repuestos",
+  "Ensayos/logística",
+  "Otros gastos generales",
+];
+
+export type CajaMovimientoTipo = "ingreso" | "egreso";
+
+export interface CajaMovimiento {
+  id: string;
+  tipo: CajaMovimientoTipo;
+  categoria: CajaCategoriaUI;
+  concepto: string;
+  monto: number;
+  fechaIso: string;
+  esTraspaso: boolean;
+  registradoPor: string;
+}
+
+export type PresupuestoRubroTipo = "Fantasia" | "Remeras";
+
+export interface PresupuestoGasto {
+  id: string;
+  categoria: string;
+  concepto: string;
+  costoUnidad: number;
+  cantidad: number;
+  monto: number;
+  fechaIso: string;
+  cajaMovimientoId: string | null;
+  registradoPor: string;
+}
+
+export interface PresupuestoRubro {
+  rubro: PresupuestoRubroTipo;
+  montoEstimado: number;
+  gastos: PresupuestoGasto[];
+}
+
+export const CATEGORIAS_FANTASIA = ["Telas", "Materiales", "Alegorías", "Otro"];
+
+export interface BeneficioGasto {
+  id: string;
+  concepto: string;
+  costoUnidad: number;
+  cantidad: number;
+  monto: number;
+}
+
+export interface BeneficioGeneral {
+  id: string;
+  nombre: string;
+  fechaIso: string;
+  objetivoRecaudacion: number | null;
+  ingresoBruto: number;
+  gastos: BeneficioGasto[];
+  gananciaNeta: number;
+  agendaEventoId: string | null;
+  cajaMovimientoId: string | null;
+  registradoPor: string;
+}
+
+export interface BeneficioDistribuidoVenta {
+  id: string;
+  unidades: number | null;
+  monto: number;
+  montoEnCaja: number | null;
+  fechaIso: string;
+  movimientoCuentaCorrienteId: string | null;
+  cajaMovimientoId: string | null;
+  registradoPor: string;
+}
+
+export interface BeneficioDistribuidoVendedor {
+  id: string;
+  tipoId: string;
+  ritmistaEdicionId: string | null;
+  ritmistaNombre: string | null;
+  ritmistaSaldoPendiente: number | null;
+  nombreExterno: string | null;
+  contactoExterno: string | null;
+  unidadesAsignadas: number;
+  ventas: BeneficioDistribuidoVenta[];
+}
+
+export interface BeneficioDistribuidoTipo {
+  id: string;
+  nombre: string;
+  precioUnidad: number;
+  fechaLimiteIso: string;
+  vendedores: BeneficioDistribuidoVendedor[];
+}
+
+export interface StockIndumentaria {
+  talle: string;
+  cantidadStock: number;
+  cantidadEntregada: number;
+  cantidadPendiente: number;
+}
+
+export interface RitmistaOpcion {
+  ritmistaEdicionId: string;
+  nombre: string;
 }
