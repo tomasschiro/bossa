@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Building2, Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { crearBateriaConDirector, type getBaterias } from "@/lib/superadmin-actions";
 
 type Baterias = Awaited<ReturnType<typeof getBaterias>>;
@@ -60,7 +61,7 @@ export function BateriasView({ baterias }: { baterias: Baterias }) {
               <div className="space-y-5">
                 <div><label htmlFor="ba-dir-nombre" className={label}>Nombre</label><Input id="ba-dir-nombre" maxLength={100} required value={directorNombre} onChange={(e) => setDirectorNombre(e.target.value)} /></div>
                 <div><label htmlFor="ba-dir-email" className={label}>Email</label><Input id="ba-dir-email" type="email" required value={directorEmail} onChange={(e) => setDirectorEmail(e.target.value)} /></div>
-                <div><label htmlFor="ba-dir-password" className={label}>Contraseña inicial</label><Input id="ba-dir-password" type="password" minLength={8} maxLength={128} required value={directorPassword} onChange={(e) => setDirectorPassword(e.target.value)} /></div>
+                <div><label htmlFor="ba-dir-password" className={label}>Contraseña inicial</label><PasswordInput id="ba-dir-password" minLength={8} maxLength={128} required value={directorPassword} onChange={(e) => setDirectorPassword(e.target.value)} /></div>
               </div>
             </div>
             <Notice value={notice} />

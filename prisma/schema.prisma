@@ -550,7 +550,7 @@ model Membresia {
 // Preserve who reverted a record even though the original operation deletes it.
 model Auditoria {
   id            String   @id @default(cuid())
-  bateriaId     String
+  bateriaId     String?
   usuarioId     String
   registradoPor String
   accion        String

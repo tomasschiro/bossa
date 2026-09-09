@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { guardarBateriaSuperAdmin, crearUsuarioConMembresia, cambiarRolMembresia, quitarAcceso, type getBateriaDetalle } from "@/lib/superadmin-actions";
 import type { RolMembresia } from "@prisma/client";
 
@@ -102,7 +103,7 @@ export function BateriaDetalleView({ bateria }: { bateria: Bateria }) {
           <form aria-label="Agregar usuario" className="space-y-5 rounded-xl border border-border p-4" onSubmit={crearUsuario}>
             <div><label htmlFor="nu-nombre" className={label}>Nombre</label><Input id="nu-nombre" maxLength={100} required value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} /></div>
             <div><label htmlFor="nu-email" className={label}>Email</label><Input id="nu-email" type="email" required value={nuevoEmail} onChange={(e) => setNuevoEmail(e.target.value)} /></div>
-            <div><label htmlFor="nu-password" className={label}>Contraseña inicial</label><Input id="nu-password" type="password" minLength={8} maxLength={128} required value={nuevoPassword} onChange={(e) => setNuevoPassword(e.target.value)} /></div>
+            <div><label htmlFor="nu-password" className={label}>Contraseña inicial</label><PasswordInput id="nu-password" minLength={8} maxLength={128} required value={nuevoPassword} onChange={(e) => setNuevoPassword(e.target.value)} /></div>
             <div>
               <label htmlFor="nu-rol" className={label}>Rol</label>
               <select id="nu-rol" value={nuevoRol} onChange={(e) => setNuevoRol(e.target.value as RolMembresia)} className="h-10 w-full rounded-lg border border-border bg-card px-3 text-sm">

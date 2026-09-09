@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Building2, Palette, UserRound, LockKeyhole, ChevronDown, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { guardarBateria, guardarPaleta, guardarNombreUsuario, subirLogo, quitarLogo, type getConfiguracion } from "@/lib/configuracion-actions";
 import { PALETA_DEFAULT, colorValido, leerPaleta, textoSobreColor, type Paleta } from "@/lib/paleta";
 import { authClient } from "@/lib/auth-client";
@@ -145,9 +146,9 @@ export function ConfiguracionView({ data }: { data: Data }) {
         }}>
           <p className="text-sm text-fg-secondary">Al cambiarla se cierran tus sesiones en otros dispositivos.</p>
           <input type="hidden" name="username" autoComplete="username" value={data.user.email} />
-          <div><label htmlFor="password-actual" className={label}>Contraseña actual</label><Input id="password-actual" type="password" autoComplete="current-password" required maxLength={128} value={current} onChange={(e) => setCurrent(e.target.value)} /></div>
-          <div><label htmlFor="password-nueva" className={label}>Nueva contraseña</label><Input id="password-nueva" type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={next} onChange={(e) => setNext(e.target.value)} /></div>
-          <div><label htmlFor="password-repetir" className={label}>Repetir nueva contraseña</label><Input id="password-repetir" type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={repeat} onChange={(e) => setRepeat(e.target.value)} /></div>
+          <div><label htmlFor="password-actual" className={label}>Contraseña actual</label><PasswordInput id="password-actual" autoComplete="current-password" required maxLength={128} value={current} onChange={(e) => setCurrent(e.target.value)} /></div>
+          <div><label htmlFor="password-nueva" className={label}>Nueva contraseña</label><PasswordInput id="password-nueva" autoComplete="new-password" required minLength={8} maxLength={128} value={next} onChange={(e) => setNext(e.target.value)} /></div>
+          <div><label htmlFor="password-repetir" className={label}>Repetir nueva contraseña</label><PasswordInput id="password-repetir" autoComplete="new-password" required minLength={8} maxLength={128} value={repeat} onChange={(e) => setRepeat(e.target.value)} /></div>
           <Notice value={notices.password} /><Button type="submit" disabled={passwordPending}>{passwordPending ? "Actualizando…" : "Cambiar contraseña"}</Button>
         </form>
         </SettingsSection>

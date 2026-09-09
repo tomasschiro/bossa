@@ -150,6 +150,54 @@ export async function crearUsuarioConMembresia(input: {
   return { ok: true };
 }
 
+export async function editarUsuarioSuperAdmin(input: {
+  usuarioId: string;
+  nombre: string;
+  email: string;
+}): Promise<{ ok: true } | { error: string }> {
+  const { user } = await requireSuperAdmin();
+  const nombre = input.nombre.trim();
+  const email = input.email.trim().toLowerCase();
+  if (!nombre || nombre.length > 100) return { error: "Ingresá un nombre de hasta 100 caracteres." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Ingresá un email válido." };
+
+  const actual = await prisma.usuario.findUnique({ where: { id: input.usuarioId }, select: { nombre: true, email: true } });
+  if (!actual) return { error: "El usuario no existe." };
+  if (email !== actual.email) {
+    const ocupado = await prisma.usuario.findUnique({ where: { email } });
+    if (ocupado) return { error: "Ya existe un usuario con ese email." };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.usuario.update({ where: { id: input.usuarioId }, data: { nombre, email } });
+    await tx.auditoria.create({
+      data: { usuarioId: user.id, registradoPor: user.name, accion: "editarUsuario", entidadId: input.usuarioId, datos: { anterior: actual, nuevo: { nombre, email } } },
+    });
+  });
+  revalidatePath("/superadmin", "layout");
+  return { ok: true };
+}
+
+export async function resetPasswordUsuarioSuperAdmin(input: {
+  usuarioId: string;
+  password: string;
+}): Promise<{ ok: true } | { error: string }> {
+  const { user } = await requireSuperAdmin();
+  if (input.password.length < 8 || input.password.length > 128) return { error: "La contraseña debe tener entre 8 y 128 caracteres." };
+
+  const cuenta = await prisma.account.findFirst({ where: { userId: input.usuarioId, providerId: "credential" } });
+  if (!cuenta) return { error: "El usuario no tiene credenciales para cambiar." };
+
+  await prisma.$transaction(async (tx) => {
+    await tx.account.update({ where: { id: cuenta.id }, data: { password: await hashPassword(input.password) } });
+    await tx.auditoria.create({
+      data: { usuarioId: user.id, registradoPor: user.name, accion: "resetPasswordUsuario", entidadId: input.usuarioId, datos: {} },
+    });
+  });
+  revalidatePath("/superadmin", "layout");
+  return { ok: true };
+}
+
 export async function cambiarRolMembresia(input: { membresiaId: string; rol: RolMembresia }): Promise<{ ok: true } | { error: string }> {
   const { user } = await requireSuperAdmin();
   if (!ROLES_VALIDOS.includes(input.rol)) return { error: "Elegí un rol válido." };
