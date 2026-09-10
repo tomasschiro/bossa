@@ -8,5 +8,5 @@ export default async function NaipeFichaPage({params,searchParams}:{params:Promi
  if(!await prisma.edicion.findUnique({where:{id:edicionId,bateriaId},select:{id:true}}))notFound();
  const data=await getPlanNaipes(edicionId);const row=data.rows.find(r=>r.nombre===naipe);
  if(!row||!data.edicion)notFound();
- return <NaipeFicha key={`${edicionId}:${naipe}`} row={row} edicion={data.edicion} confirmados={(await searchParams).confirmados==="1"}/>;
+ return <NaipeFicha key={`${edicionId}:${naipe}`} row={row} rows={data.rows} edicion={data.edicion} confirmados={(await searchParams).confirmados==="1"}/>;
 }
