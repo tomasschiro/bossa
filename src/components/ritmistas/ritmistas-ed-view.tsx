@@ -113,7 +113,7 @@ export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, varian
       const nuevoRitmista: Ritmista = {
         ...data,
         id: tmpId,
-        historial: [{ naipe: data.naipeReferencia, periodo: `${anio}`, desde: anio }],
+        historial: [{ id: `tmp-h-${Date.now()}`, naipe: data.naipeReferencia, periodo: `${anio}`, desde: anio }],
       };
       const nuevaEdicion: RitmistaEdicion = {
         id: `tmp-re-${Date.now()}`,
@@ -231,7 +231,12 @@ export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, varian
         </Button>
       </div>
 
-      <RitmistasEdTable rows={filteredRows} onOpen={setFichaOpen} />
+      <RitmistasEdTable
+        rows={filteredRows}
+        onOpen={setFichaOpen}
+        variantesPorNaipe={variantesPorNaipe}
+        onInlineSaved={(updatedRitmista, updatedEdicion) => handleSave(updatedRitmista, updatedEdicion)}
+      />
     </div>
   );
 }

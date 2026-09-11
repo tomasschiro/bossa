@@ -193,6 +193,15 @@ export async function updateRitmistaNaipeNivel(input: {
   revalidatePath("/ritmistas/base-de-datos");
 }
 
+/** Elimina una entrada puntual del historial de naipes de un ritmista. */
+export async function eliminarHistorialItem(input: { id: string; ritmistaId: string }) {
+  const { bateriaId } = await requireBateria();
+  await prisma.ritmista.findFirstOrThrow({ where: { id: input.ritmistaId, bateriaId } });
+  await prisma.naipeHistorialItem.delete({ where: { id: input.id, ritmistaId: input.ritmistaId } });
+  revalidatePath("/ritmistas/carnaval");
+  revalidatePath("/ritmistas/base-de-datos");
+}
+
 export async function updateRitmistaEdicion(input: {
   id: string;
   naipe: string;

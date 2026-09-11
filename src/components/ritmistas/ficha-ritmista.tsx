@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ArrowLeft, Undo2 } from "lucide-react";
+import { ArrowLeft, Undo2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -51,6 +51,7 @@ import {
   addBeneficio as addBeneficioAction,
   revertBeneficio as revertBeneficioAction,
   toggleEntrega as toggleEntregaAction,
+  eliminarHistorialItem,
 } from "@/lib/actions";
 
 import { useCurrentUser } from "@/components/auth/user-context";
@@ -84,6 +85,7 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
   const [movimientos, setMovimientos] = useState(edicion?.movimientos ?? []);
   const [entregas, setEntregas] = useState(edicion?.entregas ?? []);
   const [beneficios, setBeneficios] = useState(edicion?.beneficios ?? []);
+  const [historial, setHistorial] = useState(ritmista.historial);
   const [tab, setTab] = useState<"indumentaria" | "beneficios">("indumentaria");
   const [isPending, startTransition] = useTransition();
   const [addMovimientoOpen, setAddMovimientoOpen] = useState(false);
@@ -136,6 +138,7 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
       talleRemera: draft.talleRemera,
       calzado: draft.calzado,
       nivel: draft.nivel,
+      historial,
       ...(edicion ? {} : { naipeReferencia: draft.naipe as Ritmista["naipeReferencia"] }),
     };
     const updatedEdicion: RitmistaEdicion | null = edicion
@@ -172,6 +175,14 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
     setMovimientos((prev) => prev.filter((m) => m.id !== id));
     startTransition(async () => {
       await revertMovimientoAction(id);
+    });
+  };
+
+  const borrarHistorialItem = (id: string) => {
+    if (!window.confirm("¿Eliminar esta entrada del historial? Esta acción no se puede deshacer.")) return;
+    setHistorial((prev) => prev.filter((h) => h.id !== id));
+    startTransition(async () => {
+      await eliminarHistorialItem({ id, ritmistaId: ritmista.id });
     });
   };
 
@@ -410,16 +421,25 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
 
             <SectionLabel>Historial — qué tocó antes</SectionLabel>
             <p className="mb-3 text-[13px] leading-relaxed text-fg-secondary">
-              {historialTexto(ritmista.historial)}
+              {historialTexto(historial)}
             </p>
-            {ritmista.historial.length > 0 && (
+            {historial.length > 0 && (
               <div className="flex flex-col gap-px overflow-hidden rounded-lg border border-border bg-border">
-                {ritmista.historial.map((h, i) => (
-                  <div key={i} className="flex items-center gap-3.5 bg-card p-3">
+                {historial.map((h) => (
+                  <div key={h.id} className="flex items-center gap-3.5 bg-card p-3">
                     <div className="font-mono-num min-w-16 text-[13px] font-semibold text-foreground">
                       {h.periodo}
                     </div>
                     <div className="flex-1 text-[13px] text-foreground">{h.naipe}</div>
+                    <button
+                      type="button"
+                      aria-label={`Eliminar entrada del historial: ${h.naipe} (${h.periodo})`}
+                      disabled={isPending}
+                      onClick={() => borrarHistorialItem(h.id)}
+                      className="text-fg-tertiary hover:text-danger disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
                   </div>
                 ))}
               </div>

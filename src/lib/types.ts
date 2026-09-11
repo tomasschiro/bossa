@@ -32,6 +32,7 @@ export const ESTADOS_LLEGADA: EstadoLlegada[] = [
 
 /** Un ítem del historial: qué naipe tocó en qué año/ediciones. */
 export interface NaipeHistorialItem {
+  id: string;
   naipe: string;
   /** Ej. "2023–2026" o "2024" */
   periodo: string;

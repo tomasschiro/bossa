@@ -119,7 +119,7 @@ function toIso(d: Date): string {
 }
 
 export function mapHistorial(h: PrismaHistorial): NaipeHistorialItem {
-  return { naipe: h.naipe, periodo: h.periodo, desde: h.desde };
+  return { id: h.id, naipe: h.naipe, periodo: h.periodo, desde: h.desde };
 }
 
 export function mapRitmista(r: PrismaRitmista & { historial: PrismaHistorial[] }): Ritmista {
