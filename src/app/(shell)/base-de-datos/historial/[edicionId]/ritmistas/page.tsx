@@ -7,5 +7,5 @@ export default async function HistorialRitmistasPage({ params }: { params: Promi
     getEdicionHistorial(edicionId),
     getRitmistasEdicionHistorial(edicionId),
   ]);
-  return <RitmistasEdView key={edicionId} initialRows={rows} anio={edicion?.anioCarnaval ?? 0} readOnly />;
+  return <RitmistasEdView key={edicionId} initialRows={rows} anio={edicion?.anioCarnaval ?? 0} readOnly variantesPorNaipe={{}} />;
 }

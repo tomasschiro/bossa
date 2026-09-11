@@ -14,12 +14,6 @@ export function calcAge(isoDate: string): number {
   return age;
 }
 
-/** Antigüedad = ediciones desde la primera edición registrada en el historial. No editable, calculado. */
-export function calcAntiguedad(ritmista: Ritmista, edicionActual: number): number {
-  if (ritmista.historial.length === 0) return 0;
-  const primerAnio = Math.min(...ritmista.historial.map((h) => h.desde));
-  return Math.max(edicionActual - primerAnio + 1, 0);
-}
 
 export function formatMoney(n: number): string {
   return `$${n.toLocaleString("es-AR")}`;

@@ -12,26 +12,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { type Naipe } from "@/lib/types";
+import { cn } from "cn";
+import { NaipeVarianteSelect } from "./naipe-variante-select";
+import { type Naipe, type Nivel } from "@/lib/types";
 import type { Ritmista } from "@/lib/types";
-
-const SUBTIPOS: Partial<Record<Naipe, string[]>> = {
-  Caixas: ['12"', '14"'],
-  Repiques: ['12"', '14"', '16"'],
-  Surdos: ["1ra", "2da", "3ra"],
-};
 
 interface AddRitmistaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreate: (ritmista: Omit<Ritmista, "id" | "historial">) => void;
+  variantesPorNaipe: Record<string, string[]>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -43,20 +33,19 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function AddRitmistaDialog({ open, onOpenChange, onCreate }: AddRitmistaDialogProps) {
+export function AddRitmistaDialog({ open, onOpenChange, onCreate, variantesPorNaipe }: AddRitmistaDialogProps) {
   const NAIPES = useNaipes();
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [dni, setDni] = useState("");
   const [telefono, setTelefono] = useState("");
   const [nacimientoIso, setNacimientoIso] = useState("");
-  const [naipe, setNaipe] = useState<Naipe>(NAIPES[0] ?? "");
-  const [subtipo, setSubtipo] = useState("");
+  const [naipeRef, setNaipeRef] = useState<string>(NAIPES[0] ?? "");
+  const [nivel, setNivel] = useState<Nivel>("Avanzado");
   const [talleRemera, setTalleRemera] = useState("");
   const [calzado, setCalzado] = useState("");
 
-  const subtipoOptions = SUBTIPOS[naipe] ?? [];
-  const canSubmit = NAIPES.includes(naipe) && nombre.trim().length > 0 && apellido.trim().length > 0;
+  const canSubmit = naipeRef.trim().length > 0 && nombre.trim().length > 0 && apellido.trim().length > 0;
 
   const reset = () => {
     setNombre("");
@@ -64,8 +53,8 @@ export function AddRitmistaDialog({ open, onOpenChange, onCreate }: AddRitmistaD
     setDni("");
     setTelefono("");
     setNacimientoIso("");
-    setNaipe(NAIPES[0] ?? "");
-    setSubtipo("");
+    setNaipeRef(NAIPES[0] ?? "");
+    setNivel("Avanzado");
     setTalleRemera("");
     setCalzado("");
   };
@@ -78,10 +67,10 @@ export function AddRitmistaDialog({ open, onOpenChange, onCreate }: AddRitmistaD
       dni,
       telefono,
       nacimientoIso,
-      nivel: "Principiante",
+      nivel,
       talleRemera,
       calzado,
-      naipeReferencia: naipe,
+      naipeReferencia: naipeRef as Naipe,
     });
     reset();
     onOpenChange(false);
@@ -139,47 +128,30 @@ export function AddRitmistaDialog({ open, onOpenChange, onCreate }: AddRitmistaD
             />
           </Field>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            <Field label="Instrumento">
-              <Select
-                value={naipe}
-                onValueChange={(v) => {
-                  setNaipe(v as Naipe);
-                  setSubtipo("");
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {NAIPES.map((n) => (
-                    <SelectItem key={n} value={n}>
-                      {n}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+          <Field label="Instrumento">
+            <NaipeVarianteSelect value={naipeRef} onChange={setNaipeRef} variantesPorNaipe={variantesPorNaipe} />
+          </Field>
 
-            {subtipoOptions.length > 0 ? (
-              <Field label="Subcategoría">
-                <Select value={subtipo} onValueChange={setSubtipo}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subtipoOptions.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            ) : (
-              <div />
-            )}
-          </div>
+          <Field label="Nivel">
+            <div className="grid grid-cols-2 gap-2.5">
+              {(["Avanzado", "Principiante"] as Nivel[]).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setNivel(opt)}
+                  aria-pressed={nivel === opt}
+                  className={cn(
+                    "h-10 rounded-lg border text-sm font-semibold transition-colors",
+                    nivel === opt
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-fg-secondary hover:bg-bg-subtle",
+                  )}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </Field>
 
           <div className="grid grid-cols-2 gap-2.5">
             <Field label="Talle de remera">

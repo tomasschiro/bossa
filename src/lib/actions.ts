@@ -5,6 +5,7 @@ import { prisma } from "./prisma";
 import { mapRitmista, mapRitmistaEdicion, ESTADO_UI_TO_DB } from "./mappers";
 import type { Ritmista, RitmistaEdicion, EstadoLlegada, MovimientoTipo, MovimientoEstado, BeneficioEstado } from "./types";
 import { getCarnaval } from "./carnaval";
+import { familiaNaipe } from "./naipes-familias";
 
 import { requireBateria } from "./session";
 
@@ -92,12 +93,13 @@ interface CreateRitmistaInput {
   naipeReferencia: string;
   talleRemera: string;
   calzado: string;
+  nivel?: "Principiante" | "Avanzado";
 }
 
 /** Crea un ritmista en el padrón y lo suma a una edición (activa por defecto) como No confirmado */
 export async function createRitmista(input: CreateRitmistaInput) {
   const { bateriaId } = await requireBateria();
-  await prisma.naipe.findFirstOrThrow({ where: { bateriaId, nombre: input.naipeReferencia } });
+  await prisma.naipe.findFirstOrThrow({ where: { bateriaId, nombre: familiaNaipe(input.naipeReferencia) } });
   const destino = await getEdicion(input.edicionId);
   if (!destino) throw new Error("Primero prepará el próximo Carnaval en Configuración.");
   const edicionId = destino.id;
@@ -113,6 +115,7 @@ export async function createRitmista(input: CreateRitmistaInput) {
       naipeReferencia: input.naipeReferencia,
       talleRemera: input.talleRemera,
       calzado: input.calzado,
+      nivel: input.nivel ?? "Avanzado",
       historial: {
         create: [{ naipe: input.naipeReferencia, periodo: `${destino.anioCarnaval}`, desde: destino.anioCarnaval }],
       },
@@ -147,10 +150,13 @@ interface UpdateRitmistaInput {
   talleRemera: string;
   calzado: string;
   nivel: string;
+  naipeReferencia?: string;
 }
 
 export async function updateRitmista(input: UpdateRitmistaInput) {
   const { bateriaId } = await requireBateria();
+  const naipeReferencia = input.naipeReferencia?.trim().replace(/\s+/g, " ");
+  if (naipeReferencia) await prisma.naipe.findFirstOrThrow({ where: { bateriaId, nombre: familiaNaipe(naipeReferencia) } });
   await prisma.ritmista.update({
     where: { id: input.id, bateriaId },
     data: {
@@ -162,7 +168,26 @@ export async function updateRitmista(input: UpdateRitmistaInput) {
       talleRemera: input.talleRemera,
       calzado: input.calzado,
       nivel: input.nivel as "Principiante" | "Avanzado",
+      ...(naipeReferencia ? { naipeReferencia } : {}),
     },
+  });
+  revalidatePath("/ritmistas/carnaval");
+  revalidatePath("/ritmistas/base-de-datos");
+}
+
+/** Edición rápida desde la tabla del padrón: solo naipe de referencia y nivel. */
+export async function updateRitmistaNaipeNivel(input: {
+  id: string;
+  naipeReferencia: string;
+  nivel: "Principiante" | "Avanzado";
+}) {
+  const { bateriaId } = await requireBateria();
+  const naipeReferencia = input.naipeReferencia.trim().replace(/\s+/g, " ");
+  if (!naipeReferencia) throw new Error("Elegí un naipe.");
+  await prisma.naipe.findFirstOrThrow({ where: { bateriaId, nombre: familiaNaipe(naipeReferencia) } });
+  await prisma.ritmista.update({
+    where: { id: input.id, bateriaId },
+    data: { naipeReferencia, nivel: input.nivel },
   });
   revalidatePath("/ritmistas/carnaval");
   revalidatePath("/ritmistas/base-de-datos");

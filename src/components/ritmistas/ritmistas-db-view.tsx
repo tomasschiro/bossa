@@ -14,9 +14,10 @@ import { createRitmista } from "@/lib/actions";
 
 interface RitmistasDbViewProps {
   initialRitmistas: Ritmista[];
+  variantesPorNaipe: Record<string, string[]>;
 }
 
-export function RitmistasDbView({ initialRitmistas }: RitmistasDbViewProps) {
+export function RitmistasDbView({ initialRitmistas, variantesPorNaipe }: RitmistasDbViewProps) {
   const [ritmistas, setRitmistas] = useState<Ritmista[]>(initialRitmistas);
   const [search, setSearch] = useState("");
   const [naipeFilter, setNaipeFilter] = useState<Naipe | "Todos">("Todos");
@@ -48,6 +49,7 @@ export function RitmistasDbView({ initialRitmistas }: RitmistasDbViewProps) {
         naipeReferencia: data.naipeReferencia,
         talleRemera: data.talleRemera,
         calzado: data.calzado,
+        nivel: data.nivel,
       });
       // El padrón se refresca al re-navegar; agregamos localmente para feedback inmediato.
       setRitmistas((prev) => [
@@ -62,6 +64,7 @@ export function RitmistasDbView({ initialRitmistas }: RitmistasDbViewProps) {
       <FichaRitmista
         ritmista={fichaOpen}
         edicion={null}
+        variantesPorNaipe={variantesPorNaipe}
         onBack={() => setFichaOpen(null)}
         onSave={(updated) => handleSave(updated)}
       />
@@ -78,7 +81,7 @@ export function RitmistasDbView({ initialRitmistas }: RitmistasDbViewProps) {
         <Button onClick={() => setAddOpen(true)}>+ Nuevo ritmista</Button>
       </div>
 
-      <AddRitmistaDialog open={addOpen} onOpenChange={setAddOpen} onCreate={handleCreate} />
+      <AddRitmistaDialog open={addOpen} onOpenChange={setAddOpen} onCreate={handleCreate} variantesPorNaipe={variantesPorNaipe} />
 
       <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <div className="relative w-full sm:w-64 sm:shrink-0">
@@ -94,7 +97,12 @@ export function RitmistasDbView({ initialRitmistas }: RitmistasDbViewProps) {
         <NaipeChips value={naipeFilter} onChange={setNaipeFilter} compact />
       </div>
 
-      <RitmistasDbTable ritmistas={filtered} onOpen={setFichaOpen} />
+      <RitmistasDbTable
+        ritmistas={filtered}
+        onOpen={setFichaOpen}
+        variantesPorNaipe={variantesPorNaipe}
+        onInlineSaved={(updated) => setRitmistas((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))}
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NaipeVarianteSelect } from "./naipe-variante-select";
 import {
   Table,
   TableBody,
@@ -35,7 +36,6 @@ import type {
 } from "@/lib/types";
 import {
   calcAge,
-  calcAntiguedad,
   formatDate,
   formatMoney,
   fullName,
@@ -43,7 +43,6 @@ import {
   initials,
   saldoPendiente,
 } from "@/lib/ritmistas-utils";
-import { anioEnPreparacion } from "@/lib/carnaval-utils";
 import {
   updateRitmista,
   updateRitmistaEdicion,
@@ -60,6 +59,7 @@ interface FichaRitmistaProps {
   readOnly?: boolean;
   ritmista: Ritmista;
   edicion: RitmistaEdicion | null;
+  variantesPorNaipe: Record<string, string[]>;
   onBack: () => void;
   onSave: (updated: Ritmista, updatedEdicion: RitmistaEdicion | null) => void;
 }
@@ -77,7 +77,7 @@ interface Draft {
   estadoLlegada: EstadoLlegada;
 }
 
-export function FichaRitmista({ ritmista, edicion, onBack, onSave, readOnly = false }: FichaRitmistaProps) {
+export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, onSave, readOnly = false }: FichaRitmistaProps) {
   const { name: registradoPor } = useCurrentUser();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -90,7 +90,6 @@ export function FichaRitmista({ ritmista, edicion, onBack, onSave, readOnly = fa
   const [addBeneficioOpen, setAddBeneficioOpen] = useState(false);
 
   const edad = calcAge(ritmista.nacimientoIso);
-  const antiguedad = calcAntiguedad(ritmista, edicion?.edicionAnio ?? anioEnPreparacion());
 
   const isEdition = !!edicion;
   const pendiente = edicion ? saldoPendiente({ ...edicion, movimientos }) : 0;
@@ -111,7 +110,7 @@ export function FichaRitmista({ ritmista, edicion, onBack, onSave, readOnly = fa
       talleRemera: ritmista.talleRemera,
       calzado: ritmista.calzado,
       nivel: ritmista.nivel,
-      naipe: edicion?.naipe ?? "",
+      naipe: edicion?.naipe ?? ritmista.naipeReferencia,
       estadoLlegada: edicion?.estadoLlegada ?? "Confirmado",
     });
     setEditing(true);
@@ -137,6 +136,7 @@ export function FichaRitmista({ ritmista, edicion, onBack, onSave, readOnly = fa
       talleRemera: draft.talleRemera,
       calzado: draft.calzado,
       nivel: draft.nivel,
+      ...(edicion ? {} : { naipeReferencia: draft.naipe as Ritmista["naipeReferencia"] }),
     };
     const updatedEdicion: RitmistaEdicion | null = edicion
       ? { ...edicion, naipe: draft.naipe, estadoLlegada: draft.estadoLlegada, movimientos, entregas, beneficios }
@@ -153,6 +153,7 @@ export function FichaRitmista({ ritmista, edicion, onBack, onSave, readOnly = fa
         talleRemera: draft.talleRemera,
         calzado: draft.calzado,
         nivel: draft.nivel,
+        ...(edicion ? {} : { naipeReferencia: draft.naipe }),
       });
       if (edicion) {
         await updateRitmistaEdicion({
@@ -355,46 +356,38 @@ export function FichaRitmista({ ritmista, edicion, onBack, onSave, readOnly = fa
               </Field>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Nivel">
-                {!editing ? (
-                  <FieldValue>{ritmista.nivel}</FieldValue>
-                ) : (
-                  <Select
-                    value={draft?.nivel}
-                    onValueChange={(v) => setDraft((d) => d && { ...d, nivel: v as Nivel })}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Principiante">Principiante</SelectItem>
-                      <SelectItem value="Avanzado">Avanzado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </Field>
-              <Field label="Antigüedad">
-                <FieldValue>
-                  {antiguedad} {antiguedad === 1 ? "edición" : "ediciones"}
-                </FieldValue>
-              </Field>
-            </div>
+            <Field label="Nivel">
+              {!editing ? (
+                <FieldValue>{ritmista.nivel}</FieldValue>
+              ) : (
+                <Select
+                  value={draft?.nivel}
+                  onValueChange={(v) => setDraft((d) => d && { ...d, nivel: v as Nivel })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Principiante">Principiante</SelectItem>
+                    <SelectItem value="Avanzado">Avanzado</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </Field>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4.5 shadow-[var(--sh-sm)]">
             <SectionLabel>Naipe actual</SectionLabel>
             {!editing ? (
               <FieldValue className="mb-4">{edicion ? edicion.naipe : ritmista.naipeReferencia}</FieldValue>
-            ) : isEdition ? (
-              <Input
-                className="mb-4"
-                value={draft?.naipe ?? ""}
-                onChange={(e) => setDraft((d) => d && { ...d, naipe: e.target.value })}
-                placeholder='Ej. Caixa 14"'
-              />
             ) : (
-              <FieldValue className="mb-4">{ritmista.naipeReferencia}</FieldValue>
+              <div className="mb-4">
+                <NaipeVarianteSelect
+                  value={draft?.naipe ?? ""}
+                  onChange={(v) => setDraft((d) => d && { ...d, naipe: v })}
+                  variantesPorNaipe={variantesPorNaipe}
+                />
+              </div>
             )}
 
             {isEdition && editing && (

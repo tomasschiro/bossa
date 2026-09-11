@@ -39,10 +39,11 @@ interface RitmistasEdViewProps {
   anio: number;
   edicionId?: string;
   readOnly: boolean;
+  variantesPorNaipe: Record<string, string[]>;
   headerExtra?: React.ReactNode;
 }
 
-export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, headerExtra }: RitmistasEdViewProps) {
+export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, variantesPorNaipe, headerExtra }: RitmistasEdViewProps) {
   const catalogo = useNaipes();
   const NAIPES = [...new Set([...catalogo, ...initialRows.map((r) => naipeGroupOf(r.edicion.naipe))])];
   const [rows, setRows] = useState<Row[]>(initialRows);
@@ -105,6 +106,7 @@ export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, header
         naipeReferencia: data.naipeReferencia,
         talleRemera: data.talleRemera,
         calzado: data.calzado,
+        nivel: data.nivel,
       });
       // Feedback inmediato en la tabla; el server component confirma con datos reales al re-navegar.
       const tmpId = `tmp-${Date.now()}`;
@@ -134,6 +136,7 @@ export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, header
       <FichaRitmista readOnly={readOnly}
         ritmista={fichaOpen.ritmista}
         edicion={fichaOpen.edicion}
+        variantesPorNaipe={variantesPorNaipe}
         onBack={() => setFichaOpen(null)}
         onSave={handleSave}
       />
@@ -172,7 +175,7 @@ export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, header
 
       {!readOnly && (
         <>
-          <AddRitmistaDialog open={addOpen} onOpenChange={setAddOpen} onCreate={handleCreateRitmista} />
+          <AddRitmistaDialog open={addOpen} onOpenChange={setAddOpen} onCreate={handleCreateRitmista} variantesPorNaipe={variantesPorNaipe} />
           <ImportRitmistasDialog open={importOpen} onOpenChange={setImportOpen} />
         </>
       )}
