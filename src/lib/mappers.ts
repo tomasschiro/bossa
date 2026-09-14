@@ -4,7 +4,6 @@ import type {
   RitmistaEdicion as PrismaRitmistaEdicion,
   MovimientoCuentaCorriente as PrismaMovimiento,
   EntregaIndumentaria as PrismaEntrega,
-  BeneficioMovimiento as PrismaBeneficio,
   Instrumento as PrismaInstrumento,
   Repuesto as PrismaRepuesto,
   CajaMovimiento as PrismaCajaMovimiento,
@@ -15,6 +14,7 @@ import type {
   BeneficioDistribuidoTipo as PrismaBeneficioDistribuidoTipo,
   BeneficioDistribuidoVendedor as PrismaBeneficioDistribuidoVendedor,
   BeneficioDistribuidoVenta as PrismaBeneficioDistribuidoVenta,
+  BeneficioDistribuidoUnidad as PrismaBeneficioDistribuidoUnidad,
   Prisma,
 } from "@prisma/client";
 import type {
@@ -23,7 +23,6 @@ import type {
   RitmistaEdicion,
   MovimientoCuentaCorriente,
   EntregaIndumentaria,
-  BeneficioMovimiento,
   Naipe,
   Nivel,
   EstadoLlegada,
@@ -43,6 +42,8 @@ import type {
   BeneficioDistribuidoTipo,
   BeneficioDistribuidoVendedor,
   BeneficioDistribuidoVenta,
+  BeneficioDistribuidoUnidad,
+  BeneficioUnidadEstado,
 } from "./types";
 import { gananciaNetaBeneficio } from "./presupuesto-utils";
 
@@ -59,24 +60,20 @@ export const ESTADO_UI_TO_DB: Record<EstadoLlegada, "Confirmado" | "EnDuda" | "N
 };
 
 const INDUMENTARIA_DB_TO_UI: Record<string, IndumentariaItem> = {
-  RemeraOficial: "Remera oficial",
-  Pantalon: "Pantalón",
-  Zapatillas: "Zapatillas",
-  Medias: "Medias",
-  Gorra: "Gorra",
-  AccesorioDeNaipe: "Accesorio de naipe",
+  Traje: "Traje",
+  Remera: "Remera",
 };
 
-export const INDUMENTARIA_UI_TO_DB: Record<
-  IndumentariaItem,
-  "RemeraOficial" | "Pantalon" | "Zapatillas" | "Medias" | "Gorra" | "AccesorioDeNaipe"
-> = {
-  "Remera oficial": "RemeraOficial",
-  Pantalón: "Pantalon",
-  Zapatillas: "Zapatillas",
-  Medias: "Medias",
-  Gorra: "Gorra",
-  "Accesorio de naipe": "AccesorioDeNaipe",
+export const INDUMENTARIA_UI_TO_DB: Record<IndumentariaItem, "Traje" | "Remera"> = {
+  Traje: "Traje",
+  Remera: "Remera",
+};
+
+export const BENEFICIO_UNIDAD_ESTADO_DB_TO_UI: Record<string, BeneficioUnidadEstado> = {
+  SinAsignar: "Sin asignar",
+  Asignado: "Asignado",
+  Vendido: "Vendido",
+  Devuelto: "Devuelto",
 };
 
 const INSTRUMENTO_ESTADO_DB_TO_UI: Record<string, InstrumentoEstado> = {
@@ -162,22 +159,10 @@ export function mapEntrega(e: PrismaEntrega): EntregaIndumentaria {
   };
 }
 
-export function mapBeneficio(b: PrismaBeneficio): BeneficioMovimiento {
-  return {
-    id: b.id,
-    concepto: b.concepto,
-    fechaIso: toIso(b.fecha),
-    monto: Number(b.monto),
-    estado: b.estado,
-    registradoPor: b.registradoPor,
-  };
-}
-
 export function mapRitmistaEdicion(
   re: PrismaRitmistaEdicion & {
     movimientos: PrismaMovimiento[];
     entregas: PrismaEntrega[];
-    beneficios: PrismaBeneficio[];
   },
 ): RitmistaEdicion {
   return {
@@ -188,9 +173,6 @@ export function mapRitmistaEdicion(
     estadoLlegada: ESTADO_DB_TO_UI[re.estadoLlegada],
     movimientos: re.movimientos.map(mapMovimiento),
     entregas: re.entregas.map(mapEntrega),
-    beneficiosAsignados: re.beneficiosAsignados,
-    beneficiosVendidos: re.beneficiosVendidos,
-    beneficios: re.beneficios.map(mapBeneficio),
   };
 }
 
@@ -340,9 +322,6 @@ export function mapBeneficioDistribuidoVendedor(
         estadoLlegada: ESTADO_DB_TO_UI[v.ritmistaEdicion.estadoLlegada],
         movimientos: v.ritmistaEdicion.movimientos.map(mapMovimiento),
         entregas: [],
-        beneficiosAsignados: v.ritmistaEdicion.beneficiosAsignados,
-        beneficiosVendidos: v.ritmistaEdicion.beneficiosVendidos,
-        beneficios: [],
       });
     }
   }
@@ -359,11 +338,31 @@ export function mapBeneficioDistribuidoVendedor(
   };
 }
 
+export function mapBeneficioDistribuidoUnidad(
+  u: PrismaBeneficioDistribuidoUnidad & {
+    vendedor?: (PrismaBeneficioDistribuidoVendedor & { ritmistaEdicion?: (PrismaRitmistaEdicion & { ritmista: PrismaRitmista }) | null }) | null;
+  },
+): BeneficioDistribuidoUnidad {
+  const vendedorNombre = u.vendedor
+    ? (u.vendedor.ritmistaEdicion ? `${u.vendedor.ritmistaEdicion.ritmista.nombre} ${u.vendedor.ritmistaEdicion.ritmista.apellido}` : u.vendedor.nombreExterno)
+    : null;
+  return {
+    id: u.id,
+    numero: u.numero,
+    estado: BENEFICIO_UNIDAD_ESTADO_DB_TO_UI[u.estado],
+    vendedorId: u.vendedorId,
+    vendedorNombre: vendedorNombre ?? null,
+  };
+}
+
 export function mapBeneficioDistribuidoTipo(
   t: PrismaBeneficioDistribuidoTipo & {
     vendedores: (PrismaBeneficioDistribuidoVendedor & {
       ventas: PrismaBeneficioDistribuidoVenta[];
       ritmistaEdicion?: (PrismaRitmistaEdicion & { ritmista: PrismaRitmista; movimientos: PrismaMovimiento[] }) | null;
+    })[];
+    unidades?: (PrismaBeneficioDistribuidoUnidad & {
+      vendedor?: (PrismaBeneficioDistribuidoVendedor & { ritmistaEdicion?: (PrismaRitmistaEdicion & { ritmista: PrismaRitmista }) | null }) | null;
     })[];
   },
   saldoPendienteFn?: (re: RitmistaEdicion) => number,
@@ -373,6 +372,10 @@ export function mapBeneficioDistribuidoTipo(
     nombre: t.nombre,
     precioUnidad: Number(t.precioUnidad),
     fechaLimiteIso: toIso(t.fechaLimite),
+    trackearNumeros: t.trackearNumeros,
+    rangoDesde: t.rangoDesde,
+    rangoHasta: t.rangoHasta,
     vendedores: t.vendedores.map((v) => mapBeneficioDistribuidoVendedor(v, saldoPendienteFn)),
+    unidades: (t.unidades ?? []).map(mapBeneficioDistribuidoUnidad).sort((a, b) => a.numero - b.numero),
   };
 }

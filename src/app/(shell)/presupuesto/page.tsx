@@ -6,14 +6,14 @@ import {
   getBeneficiosGenerales,
   getBeneficiosDistribuidos,
   getStockIndumentaria,
-  getRitmistasParaVendedor,
 } from "@/lib/presupuesto-actions";
 import { getInstrumentos, getRepuestos } from "@/lib/inventario-actions";
+import { metricsBeneficios, metricsBeneficiosDistribuidos } from "@/lib/presupuesto-utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function PresupuestoPage() {
-  const [caja, fantasia, remeras, repuestosProyectado, beneficios, beneficiosDistribuidos, stock, ritmistas, instrumentos, repuestos] =
+  const [caja, fantasia, remeras, repuestosProyectado, beneficios, beneficiosDistribuidos, stock, instrumentos, repuestos] =
     await Promise.all([
       getCajaGeneral(),
       getPresupuestoRubro("Fantasia"),
@@ -22,20 +22,19 @@ export default async function PresupuestoPage() {
       getBeneficiosGenerales(),
       getBeneficiosDistribuidos(),
       getStockIndumentaria(),
-      getRitmistasParaVendedor(),
       getInstrumentos(),
       getRepuestos(),
     ]);
+  const beneficiosRecaudadoTotal =
+    metricsBeneficios(beneficios).recaudadoTotal + metricsBeneficiosDistribuidos(beneficiosDistribuidos.tipos).vendidoTotal;
   return (
     <PresupuestoView
       initialCaja={caja}
       initialFantasia={fantasia}
       initialRemeras={remeras}
       initialRepuestosProyectado={repuestosProyectado}
-      initialBeneficios={beneficios}
-      initialBeneficiosDistribuidos={beneficiosDistribuidos}
+      beneficiosRecaudadoTotal={beneficiosRecaudadoTotal}
       initialStock={stock}
-      ritmistas={ritmistas}
       initialInstrumentos={instrumentos}
       initialRepuestos={repuestos}
     />

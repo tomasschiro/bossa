@@ -11,25 +11,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { BeneficioEstado } from "@/lib/types";
+import type { MovimientoTipo, MovimientoEstado } from "@/lib/types";
 
-const ESTADOS: BeneficioEstado[] = ["Pendiente", "Rendido"];
-
-interface AddBeneficioDialogProps {
+interface AddAjusteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreate: (input: {
+    tipo: MovimientoTipo;
     concepto: string;
     fechaIso: string;
     monto: number;
-    estado: BeneficioEstado;
+    estado: MovimientoEstado;
   }) => void;
 }
 
@@ -46,11 +38,10 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function AddBeneficioDialog({ open, onOpenChange, onCreate }: AddBeneficioDialogProps) {
+export function AddAjusteDialog({ open, onOpenChange, onCreate }: AddAjusteDialogProps) {
   const [concepto, setConcepto] = useState("");
   const [monto, setMonto] = useState("");
   const [fechaIso, setFechaIso] = useState(todayIso());
-  const [estado, setEstado] = useState<BeneficioEstado>("Pendiente");
 
   const canSubmit = concepto.trim().length > 0 && Number(monto) > 0 && fechaIso.length > 0;
 
@@ -58,16 +49,16 @@ export function AddBeneficioDialog({ open, onOpenChange, onCreate }: AddBenefici
     setConcepto("");
     setMonto("");
     setFechaIso(todayIso());
-    setEstado("Pendiente");
   };
 
   const handleSubmit = () => {
     if (!canSubmit) return;
     onCreate({
+      tipo: "ajuste",
       concepto: concepto.trim(),
       fechaIso,
       monto: Number(monto),
-      estado,
+      estado: "Pendiente",
     });
     reset();
     onOpenChange(false);
@@ -83,9 +74,9 @@ export function AddBeneficioDialog({ open, onOpenChange, onCreate }: AddBenefici
     >
       <DialogContent className="gap-0 overflow-y-auto rounded-2xl p-0 sm:max-w-md">
         <DialogHeader className="gap-1 border-b border-border px-6 py-5">
-          <DialogTitle className="text-lg font-extrabold text-foreground">Agregar beneficio</DialogTitle>
+          <DialogTitle className="text-lg font-extrabold text-foreground">Cargar ajuste</DialogTitle>
           <DialogDescription className="text-[13px] text-fg-secondary">
-            Registra un beneficio asignado, vendido o rendido.
+            Corrección manual de la cuenta corriente.
           </DialogDescription>
         </DialogHeader>
 
@@ -94,7 +85,7 @@ export function AddBeneficioDialog({ open, onOpenChange, onCreate }: AddBenefici
             <Input
               value={concepto}
               onChange={(e) => setConcepto(e.target.value)}
-              placeholder="Ej. Rifa vendida"
+              placeholder="Ej. Corrección de saldo"
             />
           </Field>
 
@@ -117,21 +108,6 @@ export function AddBeneficioDialog({ open, onOpenChange, onCreate }: AddBenefici
               />
             </Field>
           </div>
-
-          <Field label="Estado">
-            <Select value={estado} onValueChange={(v) => setEstado(v as BeneficioEstado)}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ESTADOS.map((e) => (
-                  <SelectItem key={e} value={e}>
-                    {e}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
         </div>
 
         <div className="flex gap-2.5 border-t border-border px-6 py-4">
@@ -139,7 +115,7 @@ export function AddBeneficioDialog({ open, onOpenChange, onCreate }: AddBenefici
             Cancelar
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit} className="flex-1">
-            Guardar beneficio
+            Guardar ajuste
           </Button>
         </div>
       </DialogContent>

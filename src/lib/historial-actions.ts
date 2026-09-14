@@ -80,7 +80,6 @@ export async function getRitmistasEdicionHistorial(
       ritmista: { include: { historial: true } },
       movimientos: { orderBy: { fecha: "asc" } },
       entregas: true,
-      beneficios: { orderBy: { fecha: "asc" } },
     },
     orderBy: { id: "asc" },
   });

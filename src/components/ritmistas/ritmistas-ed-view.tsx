@@ -81,7 +81,7 @@ export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, varian
     window.print();
   };
 
-  const handleSave = (updatedRitmista: Ritmista, updatedEdicion: RitmistaEdicion | null) => {
+  const updateRow = (updatedRitmista: Ritmista, updatedEdicion: RitmistaEdicion | null) => {
     setRows((prev) =>
       prev.map((row) =>
         row.ritmista.id === updatedRitmista.id
@@ -89,6 +89,13 @@ export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, varian
           : row,
       ),
     );
+  };
+
+  // Al guardar desde la ficha (botón Guardar), nos quedamos en la ficha con los
+  // datos actualizados. Al guardar inline desde la tabla, solo se actualiza la fila:
+  // el usuario espera quedarse en la tabla, no que lo mande a la ficha.
+  const handleSave = (updatedRitmista: Ritmista, updatedEdicion: RitmistaEdicion | null) => {
+    updateRow(updatedRitmista, updatedEdicion);
     setFichaOpen(
       updatedEdicion ? { ritmista: updatedRitmista, edicion: updatedEdicion } : null,
     );
@@ -123,9 +130,6 @@ export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, varian
         estadoLlegada: "No confirmado",
         movimientos: [],
         entregas: [],
-        beneficiosAsignados: 0,
-        beneficiosVendidos: 0,
-        beneficios: [],
       };
       setRows((prev) => [...prev, { ritmista: nuevoRitmista, edicion: nuevaEdicion }]);
     });
@@ -235,7 +239,7 @@ export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, varian
         rows={filteredRows}
         onOpen={setFichaOpen}
         variantesPorNaipe={variantesPorNaipe}
-        onInlineSaved={(updatedRitmista, updatedEdicion) => handleSave(updatedRitmista, updatedEdicion)}
+        onInlineSaved={(updatedRitmista, updatedEdicion) => updateRow(updatedRitmista, updatedEdicion)}
       />
     </div>
   );

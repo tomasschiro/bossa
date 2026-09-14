@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "./prisma";
 import { mapRitmista, mapRitmistaEdicion, ESTADO_UI_TO_DB } from "./mappers";
-import type { Ritmista, RitmistaEdicion, EstadoLlegada, MovimientoTipo, MovimientoEstado, BeneficioEstado } from "./types";
+import type { Ritmista, RitmistaEdicion, EstadoLlegada, MovimientoTipo, MovimientoEstado } from "./types";
 import { getCarnaval } from "./carnaval";
 import { familiaNaipe } from "./naipes-familias";
 
@@ -52,7 +52,6 @@ export async function getRitmistasEdicion(
       ritmista: { include: { historial: true } },
       movimientos: { orderBy: { fecha: "asc" } },
       entregas: true,
-      beneficios: { orderBy: { fecha: "asc" } },
     },
     orderBy: { id: "asc" },
   });
@@ -72,7 +71,6 @@ export async function getRitmistaEdicionById(
       ritmista: { include: { historial: true } },
       movimientos: { orderBy: { fecha: "asc" } },
       entregas: true,
-      beneficios: { orderBy: { fecha: "asc" } },
     },
   });
   if (!re) return null;
@@ -122,7 +120,7 @@ export async function createRitmista(input: CreateRitmistaInput) {
     },
   });
 
-  const indumentariaItems = ["RemeraOficial", "Pantalon", "Zapatillas", "Medias", "Gorra", "AccesorioDeNaipe"] as const;
+  const indumentariaItems = ["Traje", "Remera"] as const;
 
   await prisma.ritmistaEdicion.create({
     data: {
@@ -193,11 +191,56 @@ export async function updateRitmistaNaipeNivel(input: {
   revalidatePath("/ritmistas/base-de-datos");
 }
 
+const RITMISTA_CAMPOS_EDITABLES = ["nombre", "apellido", "dni", "talleRemera", "calzado"] as const;
+type RitmistaCampoEditable = (typeof RITMISTA_CAMPOS_EDITABLES)[number];
+
+/** Edición celda a celda desde la tabla del padrón, un campo de texto a la vez. */
+export async function updateRitmistaCampo(input: { id: string; campo: RitmistaCampoEditable; valor: string }) {
+  const { bateriaId } = await requireBateria();
+  if (!RITMISTA_CAMPOS_EDITABLES.includes(input.campo)) throw new Error("Campo no editable.");
+  const valor = input.valor.trim();
+  if ((input.campo === "nombre" || input.campo === "apellido") && !valor) throw new Error("Este campo no puede quedar vacío.");
+  await prisma.ritmista.update({
+    where: { id: input.id, bateriaId },
+    data: { [input.campo]: valor },
+  });
+  revalidatePath("/ritmistas/carnaval");
+  revalidatePath("/ritmistas/base-de-datos");
+}
+
 /** Elimina una entrada puntual del historial de naipes de un ritmista. */
 export async function eliminarHistorialItem(input: { id: string; ritmistaId: string }) {
   const { bateriaId } = await requireBateria();
   await prisma.ritmista.findFirstOrThrow({ where: { id: input.ritmistaId, bateriaId } });
   await prisma.naipeHistorialItem.delete({ where: { id: input.id, ritmistaId: input.ritmistaId } });
+  revalidatePath("/ritmistas/carnaval");
+  revalidatePath("/ritmistas/base-de-datos");
+}
+
+function validarHistorialInput(naipe: string, anio: number) {
+  const nombre = naipe.trim().replace(/\s+/g, " ");
+  if (!nombre) throw new Error("Elegí un naipe.");
+  if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) throw new Error("Ingresá un año válido.");
+  return { naipe: nombre, periodo: String(anio), desde: anio };
+}
+
+/** Agrega una entrada al historial de naipes de un ritmista. */
+export async function crearHistorialItem(input: { ritmistaId: string; naipe: string; anio: number }) {
+  const { bateriaId } = await requireBateria();
+  await prisma.ritmista.findFirstOrThrow({ where: { id: input.ritmistaId, bateriaId } });
+  const data = validarHistorialInput(input.naipe, input.anio);
+  const creado = await prisma.naipeHistorialItem.create({ data: { ritmistaId: input.ritmistaId, ...data } });
+  revalidatePath("/ritmistas/carnaval");
+  revalidatePath("/ritmistas/base-de-datos");
+  return creado;
+}
+
+/** Edita una entrada existente del historial de naipes de un ritmista. */
+export async function editarHistorialItem(input: { id: string; ritmistaId: string; naipe: string; anio: number }) {
+  const { bateriaId } = await requireBateria();
+  await prisma.ritmista.findFirstOrThrow({ where: { id: input.ritmistaId, bateriaId } });
+  const data = validarHistorialInput(input.naipe, input.anio);
+  await prisma.naipeHistorialItem.update({ where: { id: input.id, ritmistaId: input.ritmistaId }, data });
   revalidatePath("/ritmistas/carnaval");
   revalidatePath("/ritmistas/base-de-datos");
 }
@@ -252,38 +295,6 @@ export async function revertMovimiento(id: string) {
   revalidatePath("/ritmistas/carnaval");
 }
 
-export async function addBeneficio(input: {
-  ritmistaEdicionId: string;
-  concepto: string;
-  fechaIso: string;
-  monto: number;
-  estado: BeneficioEstado;
-}) {
-  const { user, bateriaId } = await requireBateria();
-  await prisma.beneficioMovimiento.create({
-    data: {
-      ritmistaEdicion: { connect: { id: input.ritmistaEdicionId, ...writableScope(bateriaId) } },
-      concepto: input.concepto,
-      fecha: new Date(input.fechaIso),
-      monto: input.monto,
-      estado: input.estado,
-      registradoPor: user.name,
-    },
-  });
-  revalidatePath("/ritmistas/carnaval");
-}
-
-export async function revertBeneficio(id: string) {
-  const { user, bateriaId } = await requireBateria();
-  await prisma.$transaction(async (tx) => {
-    const original = await tx.beneficioMovimiento.delete({ where: { id, ritmistaEdicion: writableScope(bateriaId) } });
-    await tx.auditoria.create({ data: { bateriaId, usuarioId: user.id, registradoPor: user.name,
-      accion: "revertBeneficio", entidadId: id, datos: JSON.parse(JSON.stringify(original)),
-    } });
-  });
-  revalidatePath("/ritmistas/carnaval");
-}
-
 export async function toggleEntrega(input: { id: string }) {
   const { user, bateriaId } = await requireBateria();
   const scope = { id: input.id, ritmistaEdicion: writableScope(bateriaId) };
@@ -300,18 +311,3 @@ export async function toggleEntrega(input: { id: string }) {
   revalidatePath("/ritmistas/carnaval");
 }
 
-export async function updateBeneficiosCounts(input: {
-  id: string;
-  beneficiosAsignados: number;
-  beneficiosVendidos: number;
-}) {
-  const { bateriaId } = await requireBateria();
-  await prisma.ritmistaEdicion.update({
-    where: { id: input.id, ...writableScope(bateriaId) },
-    data: {
-      beneficiosAsignados: input.beneficiosAsignados,
-      beneficiosVendidos: input.beneficiosVendidos,
-    },
-  });
-  revalidatePath("/ritmistas/carnaval");
-}

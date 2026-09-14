@@ -17,6 +17,7 @@ import {
   InventarioIcon,
   DashboardIcon,
   PresupuestoIcon,
+  BeneficiosIcon,
   AgendaIcon,
   ConfigIcon,
 } from "@/components/ritmistas/nav-icons";
@@ -29,6 +30,7 @@ const MODULES = [
   { label: "Naipes", Icon: NaipesIcon, bd: "/naipes", carnaval: "/carnaval/naipes" },
   { label: "Inventario", Icon: InventarioIcon, bd: "/inventario", carnaval: "/carnaval/inventario" },
   { label: "Presupuesto", Icon: PresupuestoIcon, bd: "/base-de-datos/presupuesto", carnaval: "/presupuesto" },
+  { label: "Beneficios", Icon: BeneficiosIcon, bd: "/base-de-datos/beneficios", carnaval: "/carnaval/beneficios" },
   { label: "Agenda", Icon: AgendaIcon, bd: "/base-de-datos/agenda", carnaval: "/agenda" },
 ];
 const DB_ONLY_MODULES = [

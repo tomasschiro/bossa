@@ -17,6 +17,9 @@ interface TipoFormValues {
   nombre: string;
   precioUnidad: number;
   fechaLimiteIso: string;
+  trackearNumeros: boolean;
+  rangoDesde: number | null;
+  rangoHasta: number | null;
 }
 
 interface BeneficioDistribuidoTipoFormDialogProps {
@@ -49,13 +52,28 @@ export function BeneficioDistribuidoTipoFormDialog({
   const [nombre, setNombre] = useState(initialValue?.nombre ?? "");
   const [precioUnidad, setPrecioUnidad] = useState(initialValue?.precioUnidad?.toString() ?? "");
   const [fechaLimiteIso, setFechaLimiteIso] = useState(initialValue?.fechaLimiteIso ?? today());
+  const [trackearNumeros, setTrackearNumeros] = useState(initialValue?.trackearNumeros ?? false);
+  const [rangoDesde, setRangoDesde] = useState(initialValue?.rangoDesde?.toString() ?? "1");
+  const [rangoHasta, setRangoHasta] = useState(initialValue?.rangoHasta?.toString() ?? "");
 
   const precioNum = Number(precioUnidad);
-  const canSubmit = nombre.trim().length > 0 && Number.isFinite(precioNum) && precioNum > 0 && fechaLimiteIso.length > 0;
+  const rangoDesdeNum = Math.trunc(Number(rangoDesde));
+  const rangoHastaNum = Math.trunc(Number(rangoHasta));
+  const rangoValido =
+    !trackearNumeros ||
+    (Number.isFinite(rangoDesdeNum) && Number.isFinite(rangoHastaNum) && rangoDesdeNum <= rangoHastaNum && rangoHastaNum - rangoDesdeNum < 5000);
+  const canSubmit = nombre.trim().length > 0 && Number.isFinite(precioNum) && precioNum > 0 && fechaLimiteIso.length > 0 && rangoValido;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    onSubmit({ nombre: nombre.trim(), precioUnidad: precioNum, fechaLimiteIso });
+    onSubmit({
+      nombre: nombre.trim(),
+      precioUnidad: precioNum,
+      fechaLimiteIso,
+      trackearNumeros,
+      rangoDesde: trackearNumeros ? rangoDesdeNum : null,
+      rangoHasta: trackearNumeros ? rangoHastaNum : null,
+    });
     onOpenChange(false);
   };
 
@@ -87,6 +105,59 @@ export function BeneficioDistribuidoTipoFormDialog({
               <Input type="date" value={fechaLimiteIso} onChange={(e) => setFechaLimiteIso(e.target.value)} className="font-mono-num" />
             </Field>
           </div>
+
+          <Field label="Trackear números individuales">
+            <div className="grid grid-cols-2 gap-2.5">
+              <Button
+                type="button"
+                variant={!trackearNumeros ? "default" : "outline"}
+                className={!trackearNumeros ? "" : "bg-card"}
+                disabled={isEdit}
+                onClick={() => setTrackearNumeros(false)}
+              >
+                No
+              </Button>
+              <Button
+                type="button"
+                variant={trackearNumeros ? "default" : "outline"}
+                className={trackearNumeros ? "" : "bg-card"}
+                disabled={isEdit}
+                onClick={() => setTrackearNumeros(true)}
+              >
+                Sí
+              </Button>
+            </div>
+            {isEdit && (
+              <p className="mt-1.5 text-xs text-fg-tertiary">No se puede cambiar después de creado.</p>
+            )}
+          </Field>
+
+          {trackearNumeros && (
+            <div className="grid grid-cols-2 gap-2.5">
+              <Field label="Número desde">
+                <Input
+                  type="number"
+                  value={rangoDesde}
+                  onChange={(e) => setRangoDesde(e.target.value)}
+                  disabled={isEdit}
+                  className="font-mono-num"
+                />
+              </Field>
+              <Field label="Número hasta">
+                <Input
+                  type="number"
+                  value={rangoHasta}
+                  onChange={(e) => setRangoHasta(e.target.value)}
+                  placeholder="500"
+                  disabled={isEdit}
+                  className="font-mono-num"
+                />
+              </Field>
+            </div>
+          )}
+          {trackearNumeros && !rangoValido && (
+            <p className="text-xs font-medium text-danger">Rango inválido (máximo 5000 números, desde ≤ hasta).</p>
+          )}
         </div>
 
         <div className="flex gap-2.5 border-t border-border px-6 py-4">

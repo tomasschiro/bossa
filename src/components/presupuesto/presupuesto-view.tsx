@@ -10,12 +10,6 @@ import { PresupuestoRubroTab } from "./presupuesto-rubro-tab";
 import { GastoPresupuestoFormDialog } from "./gasto-presupuesto-form-dialog";
 import { EstimadoFormDialog } from "./estimado-form-dialog";
 import { RepuestosProyectadoTab } from "./repuestos-proyectado-tab";
-import { BeneficiosGeneralesTab } from "./beneficios-generales-tab";
-import { BeneficioFormDialog } from "./beneficio-form-dialog";
-import { BeneficiosDistribuidosTab } from "./beneficios-distribuidos-tab";
-import { BeneficioDistribuidoTipoFormDialog } from "./beneficio-distribuido-tipo-form-dialog";
-import { VendedorFormDialog } from "./vendedor-form-dialog";
-import { VentaFormDialog } from "./venta-form-dialog";
 import { StockIndumentariaTab } from "./stock-indumentaria-tab";
 import { ConfirmDeleteDialog } from "@/components/inventario/confirm-delete-dialog";
 import { InstrumentoFormDialog } from "@/components/inventario/instrumento-form-dialog";
@@ -24,11 +18,7 @@ import type {
   CajaMovimiento,
   PresupuestoRubro,
   PresupuestoGasto,
-  BeneficioGeneral,
-  BeneficioDistribuidoTipo,
-  BeneficioDistribuidoVendedor,
   StockIndumentaria,
-  RitmistaOpcion,
   CajaCategoriaUI,
   CajaMovimientoTipo,
   Instrumento,
@@ -43,17 +33,10 @@ import {
   crearGastoPresupuesto,
   actualizarGastoPresupuesto,
   eliminarGastoPresupuesto,
-  guardarBeneficio,
-  eliminarBeneficio,
-  crearBeneficioDistribuidoTipo,
-  crearVendedor,
-  registrarVenta,
   guardarStockIndumentaria,
   getCajaGeneral,
   getPresupuestoRubro,
   getRepuestosProyectado,
-  getBeneficiosGenerales,
-  getBeneficiosDistribuidos,
   getStockIndumentaria,
 } from "@/lib/presupuesto-actions";
 import {
@@ -70,8 +53,6 @@ const PRESUPUESTO_TABS = [
   { value: "fantasia", label: "Fantasía" },
   { value: "remeras", label: "Remeras" },
   { value: "repuestos", label: "Repuestos e instrumentos" },
-  { value: "beneficios", label: "Beneficios" },
-  { value: "distribuidos", label: "Beneficios distribuidos" },
   { value: "stock", label: "Stock de indumentaria" },
 ] as const;
 
@@ -83,10 +64,8 @@ interface PresupuestoViewProps {
   initialFantasia: PresupuestoRubro;
   initialRemeras: PresupuestoRubro;
   initialRepuestosProyectado: { urgente: ProyeccionGrupo; deseable: ProyeccionGrupo; total: number };
-  initialBeneficios: BeneficioGeneral[];
-  initialBeneficiosDistribuidos: { tipos: BeneficioDistribuidoTipo[] };
+  beneficiosRecaudadoTotal: number;
   initialStock: StockIndumentaria[];
-  ritmistas: RitmistaOpcion[];
   initialInstrumentos: Instrumento[];
   initialRepuestos: Repuesto[];
 }
@@ -96,10 +75,8 @@ export function PresupuestoView({
   initialFantasia,
   initialRemeras,
   initialRepuestosProyectado,
-  initialBeneficios,
-  initialBeneficiosDistribuidos,
+  beneficiosRecaudadoTotal,
   initialStock,
-  ritmistas,
   initialInstrumentos,
   initialRepuestos,
 }: PresupuestoViewProps) {
@@ -107,8 +84,6 @@ export function PresupuestoView({
   const [fantasia, setFantasia] = useState(initialFantasia);
   const [remeras, setRemeras] = useState(initialRemeras);
   const [repuestosProyectado, setRepuestosProyectado] = useState(initialRepuestosProyectado);
-  const [beneficios, setBeneficios] = useState(initialBeneficios);
-  const [beneficiosDistribuidos, setBeneficiosDistribuidos] = useState(initialBeneficiosDistribuidos);
   const [stock, setStock] = useState(initialStock);
   const [instrumentos, setInstrumentos] = useState(initialInstrumentos);
   const [repuestos, setRepuestos] = useState(initialRepuestos);
@@ -135,24 +110,10 @@ export function PresupuestoView({
   const [editRepuesto, setEditRepuesto] = useState<Repuesto | null>(null);
   const [deleteRepuesto, setDeleteRepuesto] = useState<Repuesto | null>(null);
 
-  // Beneficios generales
-  const [addBeneficioOpen, setAddBeneficioOpen] = useState(false);
-  const [editBeneficio, setEditBeneficio] = useState<BeneficioGeneral | null>(null);
-  const [deleteBeneficio, setDeleteBeneficio] = useState<BeneficioGeneral | null>(null);
-
-  // Beneficios distribuidos
-  const [addTipoOpen, setAddTipoOpen] = useState(false);
-  const [addVendedorTipoId, setAddVendedorTipoId] = useState<string | null>(null);
-  const [vendedorError, setVendedorError] = useState<string | null>(null);
-  const [addVentaVendedor, setAddVentaVendedor] = useState<{ vendedor: BeneficioDistribuidoVendedor; precioUnidad: number } | null>(null);
-  const [ventaError, setVentaError] = useState<string | null>(null);
-
   const refreshCaja = async () => setCaja(await getCajaGeneral());
   const refreshFantasia = async () => setFantasia(await getPresupuestoRubro("Fantasia"));
   const refreshRemeras = async () => setRemeras(await getPresupuestoRubro("Remeras"));
   const refreshRepuestosProyectado = async () => setRepuestosProyectado(await getRepuestosProyectado());
-  const refreshBeneficios = async () => setBeneficios(await getBeneficiosGenerales());
-  const refreshBeneficiosDistribuidos = async () => setBeneficiosDistribuidos(await getBeneficiosDistribuidos());
   const refreshStock = async () => setStock(await getStockIndumentaria());
 
   const handleCrearMovimiento = (values: { tipo: CajaMovimientoTipo; categoria: CajaCategoriaUI; concepto: string; monto: number; fechaIso: string }) => {
@@ -218,64 +179,6 @@ export function PresupuestoView({
       await eliminarGastoPresupuesto(id);
       await refreshRubro(rubro)();
       await refreshCaja();
-    });
-  };
-
-  const handleGuardarBeneficio = (values: {
-    id?: string;
-    nombre: string;
-    fechaIso: string;
-    objetivoRecaudacion: number | null;
-    ingresoBruto: number;
-    gastos: { id?: string; concepto: string; costoUnidad: number; cantidad: number }[];
-  }) => {
-    startTransition(async () => {
-      await guardarBeneficio(values);
-      await refreshBeneficios();
-      await refreshCaja();
-    });
-  };
-
-  const handleEliminarBeneficio = (id: string) => {
-    startTransition(async () => {
-      await eliminarBeneficio(id);
-      await refreshBeneficios();
-      await refreshCaja();
-    });
-  };
-
-  const handleCrearTipo = (values: { nombre: string; precioUnidad: number; fechaLimiteIso: string }) => {
-    startTransition(async () => {
-      await crearBeneficioDistribuidoTipo(values);
-      await refreshBeneficiosDistribuidos();
-      setAddTipoOpen(false);
-    });
-  };
-
-  const handleCrearVendedor = (tipoId: string, values: { ritmistaEdicionId?: string | null; nombreExterno?: string | null; contactoExterno?: string | null; unidadesAsignadas: number }) => {
-    startTransition(async () => {
-      const result = await crearVendedor({ tipoId, ...values });
-      if ("error" in result) {
-        setVendedorError(result.error);
-        return;
-      }
-      setVendedorError(null);
-      await refreshBeneficiosDistribuidos();
-      setAddVendedorTipoId(null);
-    });
-  };
-
-  const handleRegistrarVenta = (vendedorId: string, values: { unidades?: number | null; montoDirecto?: number | null; fechaIso: string }) => {
-    startTransition(async () => {
-      const result = await registrarVenta({ vendedorId, ...values });
-      if ("error" in result) {
-        setVentaError(result.error);
-        return;
-      }
-      setVentaError(null);
-      await refreshBeneficiosDistribuidos();
-      await refreshCaja();
-      setAddVentaVendedor(null);
     });
   };
 
@@ -364,6 +267,7 @@ export function PresupuestoView({
             movimientos={caja.movimientos}
             saldoTotal={caja.saldoTotal}
             desglose={caja.desglose}
+            beneficiosRecaudadoTotal={beneficiosRecaudadoTotal}
             onAsignar={(categoria) => {
               setTraspasoError(null);
               setTraspasoOrigen(categoria as CajaCategoriaUI);
@@ -406,31 +310,6 @@ export function PresupuestoView({
             onDeleteInstrumento={setDeleteInstrumento}
             onEditRepuesto={setEditRepuesto}
             onDeleteRepuesto={setDeleteRepuesto}
-          />
-        </TabsContent>
-
-        <TabsContent value="beneficios" className="mt-4">
-          <BeneficiosGeneralesTab
-            beneficios={beneficios}
-            onAdd={() => setAddBeneficioOpen(true)}
-            onEdit={setEditBeneficio}
-            onDelete={setDeleteBeneficio}
-          />
-        </TabsContent>
-
-        <TabsContent value="distribuidos" className="mt-4">
-          <BeneficiosDistribuidosTab
-            tipos={beneficiosDistribuidos.tipos}
-            onAddTipo={() => setAddTipoOpen(true)}
-            onAddVendedor={(tipoId) => {
-              setVendedorError(null);
-              setAddVendedorTipoId(tipoId);
-            }}
-            onAddVenta={(vendedor) => {
-              setVentaError(null);
-              const tipo = beneficiosDistribuidos.tipos.find((t) => t.id === vendedor.tipoId);
-              setAddVentaVendedor({ vendedor, precioUnidad: tipo?.precioUnidad ?? 0 });
-            }}
           />
         </TabsContent>
 
@@ -545,55 +424,6 @@ export function PresupuestoView({
         onConfirm={() => deleteRepuesto && handleEliminarRepuesto(deleteRepuesto.id)}
       />
 
-      <BeneficioFormDialog
-        key={addBeneficioOpen ? "beneficio-add-open" : "beneficio-add-closed"}
-        open={addBeneficioOpen}
-        onOpenChange={setAddBeneficioOpen}
-        onSubmit={handleGuardarBeneficio}
-      />
-      <BeneficioFormDialog
-        key={editBeneficio?.id ?? "beneficio-edit-closed"}
-        open={!!editBeneficio}
-        onOpenChange={(open) => !open && setEditBeneficio(null)}
-        onSubmit={(values) => editBeneficio && handleGuardarBeneficio({ id: editBeneficio.id, ...values })}
-        initialValue={editBeneficio ?? undefined}
-      />
-      <ConfirmDeleteDialog
-        open={!!deleteBeneficio}
-        onOpenChange={(open) => !open && setDeleteBeneficio(null)}
-        title="Eliminar beneficio"
-        description={`Se eliminará "${deleteBeneficio?.nombre}" junto con su evento en Agenda y su ingreso en Caja general. Esta acción no se puede deshacer.`}
-        onConfirm={() => deleteBeneficio && handleEliminarBeneficio(deleteBeneficio.id)}
-      />
-
-      <BeneficioDistribuidoTipoFormDialog
-        key={addTipoOpen ? "tipo-add-open" : "tipo-add-closed"}
-        open={addTipoOpen}
-        onOpenChange={setAddTipoOpen}
-        onSubmit={handleCrearTipo}
-      />
-
-      {addVendedorTipoId && (
-        <VendedorFormDialog
-          key={addVendedorTipoId}
-          open={!!addVendedorTipoId}
-          onOpenChange={(open) => !open && setAddVendedorTipoId(null)}
-          onSubmit={(values) => handleCrearVendedor(addVendedorTipoId, values)}
-          ritmistas={ritmistas}
-          error={vendedorError}
-        />
-      )}
-
-      {addVentaVendedor && (
-        <VentaFormDialog
-          key={addVentaVendedor.vendedor.id}
-          open={!!addVentaVendedor}
-          onOpenChange={(open) => !open && setAddVentaVendedor(null)}
-          onSubmit={(values) => handleRegistrarVenta(addVentaVendedor.vendedor.id, values)}
-          precioUnidad={addVentaVendedor.precioUnidad}
-          error={ventaError}
-        />
-      )}
     </div>
   );
 }

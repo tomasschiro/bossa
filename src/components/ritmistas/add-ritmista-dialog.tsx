@@ -16,6 +16,7 @@ import { cn } from "cn";
 import { NaipeVarianteSelect } from "./naipe-variante-select";
 import { type Naipe, type Nivel } from "@/lib/types";
 import type { Ritmista } from "@/lib/types";
+import { formatDni, formatTelefono } from "@/lib/ritmistas-utils";
 
 interface AddRitmistaDialogProps {
   open: boolean;
@@ -104,7 +105,7 @@ export function AddRitmistaDialog({ open, onOpenChange, onCreate, variantesPorNa
             <Field label="DNI">
               <Input
                 value={dni}
-                onChange={(e) => setDni(e.target.value)}
+                onChange={(e) => setDni(formatDni(e.target.value))}
                 placeholder="00.000.000"
                 className="font-mono-num"
               />
@@ -112,8 +113,8 @@ export function AddRitmistaDialog({ open, onOpenChange, onCreate, variantesPorNa
             <Field label="Teléfono">
               <Input
                 value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
-                placeholder="341 000 0000"
+                onChange={(e) => setTelefono(formatTelefono(e.target.value))}
+                placeholder="3772-441826"
                 className="font-mono-num"
               />
             </Field>

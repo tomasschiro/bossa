@@ -70,13 +70,7 @@ export interface MovimientoCuentaCorriente {
   registradoPor: string;
 }
 
-export type IndumentariaItem =
-  | "Remera oficial"
-  | "Pantalón"
-  | "Zapatillas"
-  | "Medias"
-  | "Gorra"
-  | "Accesorio de naipe";
+export type IndumentariaItem = "Traje" | "Remera";
 
 export interface EntregaIndumentaria {
   id: string;
@@ -84,17 +78,6 @@ export interface EntregaIndumentaria {
   estado: "Entregado" | "Pendiente";
   fechaEntregaIso: string | null;
   entregadoPor: string | null;
-}
-
-export type BeneficioEstado = "Rendido" | "Pendiente";
-
-export interface BeneficioMovimiento {
-  id: string;
-  concepto: string;
-  fechaIso: string;
-  monto: number;
-  estado: BeneficioEstado;
-  registradoPor: string;
 }
 
 export type InstrumentoEstado = "Bueno" | "Regular" | "Necesita reparación" | "De baja";
@@ -156,9 +139,6 @@ export interface RitmistaEdicion {
   estadoLlegada: EstadoLlegada;
   movimientos: MovimientoCuentaCorriente[];
   entregas: EntregaIndumentaria[];
-  beneficiosAsignados: number;
-  beneficiosVendidos: number;
-  beneficios: BeneficioMovimiento[];
 }
 
 // ---- Presupuesto ----
@@ -249,6 +229,16 @@ export interface BeneficioDistribuidoVenta {
   registradoPor: string;
 }
 
+export type BeneficioUnidadEstado = "Sin asignar" | "Asignado" | "Vendido" | "Devuelto";
+
+export interface BeneficioDistribuidoUnidad {
+  id: string;
+  numero: number;
+  estado: BeneficioUnidadEstado;
+  vendedorId: string | null;
+  vendedorNombre: string | null;
+}
+
 export interface BeneficioDistribuidoVendedor {
   id: string;
   tipoId: string;
@@ -266,7 +256,26 @@ export interface BeneficioDistribuidoTipo {
   nombre: string;
   precioUnidad: number;
   fechaLimiteIso: string;
+  trackearNumeros: boolean;
+  rangoDesde: number | null;
+  rangoHasta: number | null;
   vendedores: BeneficioDistribuidoVendedor[];
+  unidades: BeneficioDistribuidoUnidad[];
+}
+
+/** Vista resumida de un tipo de beneficio distribuido desde la perspectiva de un ritmista puntual (ficha). */
+export interface BeneficioRitmista {
+  tipoId: string;
+  nombre: string;
+  precioUnidad: number;
+  trackearNumeros: boolean;
+  vendedorId: string | null;
+  /** Solo para tipos con trackearNumeros=true */
+  numeros: { id: string; numero: number; estado: BeneficioUnidadEstado }[];
+  /** Solo para tipos con trackearNumeros=false */
+  unidadesAsignadas: number;
+  unidadesVendidas: number;
+  totalVendido: number;
 }
 
 export interface StockIndumentaria {
@@ -279,4 +288,5 @@ export interface StockIndumentaria {
 export interface RitmistaOpcion {
   ritmistaEdicionId: string;
   nombre: string;
+  naipe: string;
 }

@@ -19,6 +19,19 @@ export function formatMoney(n: number): string {
   return `$${n.toLocaleString("es-AR")}`;
 }
 
+/** DNI argentino: agrupa de a 3 dígitos desde la derecha, ej. "94086614" → "94.086.614". */
+export function formatDni(value: string): string {
+  const digitos = value.replace(/\D/g, "").slice(0, 8);
+  return digitos.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+/** Teléfono: código de área (4 dígitos) + guion + resto, ej. "3772441826" → "3772-441826". */
+export function formatTelefono(value: string): string {
+  const digitos = value.replace(/\D/g, "").slice(0, 12);
+  if (digitos.length <= 4) return digitos;
+  return `${digitos.slice(0, 4)}-${digitos.slice(4)}`;
+}
+
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("es-AR");
 }
@@ -87,18 +100,6 @@ export function totalDeuda(re: RitmistaEdicion): number {
 
 export function entregaCompleta(re: RitmistaEdicion): boolean {
   return re.entregas.length > 0 && re.entregas.every((e) => e.estado === "Entregado");
-}
-
-export function historialTexto(historial: Ritmista["historial"]): string {
-  if (historial.length === 0) return "Sin historial registrado.";
-  return (
-    historial
-      .map((h) => {
-        const [from, to] = h.periodo.split("–");
-        return to ? `De ${from} a ${to} tocó ${h.naipe}` : `En ${from} tocó ${h.naipe}`;
-      })
-      .join(". ") + "."
-  );
 }
 
 export function naipeHistoryLabel(historial: Ritmista["historial"]): string {

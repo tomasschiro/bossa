@@ -1,18 +1,20 @@
 import type { NaipeMeta } from "./naipes-plan-utils";
 
-// Only known instrument families and size/voice suffixes are consolidated.
-// Free-form catalog names remain independent.
+// Only known instrument families and their variant suffixes are consolidated.
+// Free-form catalog names remain independent. El sufijo de variante puede ser
+// num\u00e9rico ("12\"", "1ra") o alfab\u00e9tico (ej. una voz nombrada "Mor") \u2014 cualquier
+// texto despu\u00e9s del nombre base y un espacio cuenta como variante del mismo naipe.
 export function familiaNaipe(nombre: string): string {
   const limpio = nombre.trim().replace(/\s+/g, " ");
   const normal = limpio.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const familias: [RegExp, string][] = [
-    [/^(?:caixas?|caxias?)(?:\s*\d.*)?$/, "Caixas"],
-    [/^repiques?(?:\s*\d.*)?$/, "Repiques"],
-    [/^surdos?(?:\s*\d.*)?$/, "Surdos"],
-    [/^(?:tamborim|tamborins|tamborin|tamborines)(?:\s*\d.*)?$/, "Tamborines"],
-    [/^cuicas?(?:\s*\d.*)?$/, "Cuicas"],
-    [/^chocalhos?$/, "Chocalho"],
-    [/^frigideiras?$/, "Frigideiras"],
+    [/^(?:caixas?|caxias?)(?:\s.*)?$/, "Caixas"],
+    [/^repiques?(?:\s.*)?$/, "Repiques"],
+    [/^surdos?(?:\s.*)?$/, "Surdos"],
+    [/^(?:tamborim|tamborins|tamborin|tamborines)(?:\s.*)?$/, "Tamborines"],
+    [/^cuicas?(?:\s.*)?$/, "Cuicas"],
+    [/^chocalhos?(?:\s.*)?$/, "Chocalho"],
+    [/^frigideiras?(?:\s.*)?$/, "Frigideiras"],
   ];
   return familias.find(([pattern]) => pattern.test(normal))?.[1] ?? limpio;
 }

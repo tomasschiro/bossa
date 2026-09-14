@@ -57,6 +57,16 @@ export function PresupuestoIcon({ active }: IconProps) {
   );
 }
 
+export function BeneficiosIcon({ active }: IconProps) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke(active)} strokeWidth="1.8">
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.6" />
+      <path d="M3 9.5a2.5 2.5 0 0 0 2.5-2.5M21 9.5A2.5 2.5 0 0 1 18.5 7M3 14.5A2.5 2.5 0 0 1 5.5 17M21 14.5a2.5 2.5 0 0 0-2.5 2.5" />
+    </svg>
+  );
+}
+
 export function AgendaIcon({ active }: IconProps) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke(active)} strokeWidth="1.8">

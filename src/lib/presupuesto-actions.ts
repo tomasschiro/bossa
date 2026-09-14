@@ -10,6 +10,7 @@ import {
   mapBeneficioGeneral,
   mapBeneficioDistribuidoTipo,
   CAJA_CATEGORIA_UI_TO_DB,
+  BENEFICIO_UNIDAD_ESTADO_DB_TO_UI,
 } from "./mappers";
 import {
   desglosePorCategoria,
@@ -30,6 +31,7 @@ import type {
   BeneficioDistribuidoTipo,
   StockIndumentaria,
   RitmistaOpcion,
+  BeneficioRitmista,
 } from "./types";
 import type { Prisma } from "@prisma/client";
 
@@ -157,10 +159,47 @@ export async function getBeneficiosDistribuidos(): Promise<{ tipos: BeneficioDis
           ritmistaEdicion: { include: { ritmista: true, movimientos: true } },
         },
       },
+      unidades: {
+        include: { vendedor: { include: { ritmistaEdicion: { include: { ritmista: true } } } } },
+        orderBy: { numero: "asc" },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
   return { tipos: rows.map((t) => mapBeneficioDistribuidoTipo(t, saldoPendienteDe)) };
+}
+
+/** Rifas numeradas activas de la edición y, si el ritmista ya es vendedor, sus números. Para la ficha del ritmista. */
+/** Todos los tipos de beneficio distribuido activos, desde la perspectiva de un ritmista puntual (ficha). */
+export async function getBeneficiosDeRitmista(ritmistaEdicionId: string): Promise<BeneficioRitmista[]> {
+  const { bateriaId } = await requireBateria();
+  const tipos = await prisma.beneficioDistribuidoTipo.findMany({
+    where: { edicion: activaScope(bateriaId) },
+    include: {
+      vendedores: {
+        where: { ritmistaEdicionId },
+        select: { id: true, unidadesAsignadas: true, ventas: { select: { unidades: true, monto: true } } },
+      },
+      unidades: { where: { vendedor: { ritmistaEdicionId } }, orderBy: { numero: "asc" }, select: { id: true, numero: true, estado: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  return tipos.map((t) => {
+    const vendedor = t.vendedores[0] ?? null;
+    const unidadesVendidas = vendedor?.ventas.reduce((s, v) => s + (v.unidades ?? 0), 0) ?? 0;
+    const totalVendido = vendedor?.ventas.reduce((s, v) => s + Number(v.monto), 0) ?? 0;
+    return {
+      tipoId: t.id,
+      nombre: t.nombre,
+      precioUnidad: Number(t.precioUnidad),
+      trackearNumeros: t.trackearNumeros,
+      vendedorId: vendedor?.id ?? null,
+      numeros: t.unidades.map((u) => ({ id: u.id, numero: u.numero, estado: BENEFICIO_UNIDAD_ESTADO_DB_TO_UI[u.estado] })),
+      unidadesAsignadas: vendedor?.unidadesAsignadas ?? 0,
+      unidadesVendidas,
+      totalVendido,
+    };
+  });
 }
 
 export async function getRitmistasParaVendedor(): Promise<RitmistaOpcion[]> {
@@ -168,9 +207,9 @@ export async function getRitmistasParaVendedor(): Promise<RitmistaOpcion[]> {
   const rows = await prisma.ritmistaEdicion.findMany({
     where: { edicion: activaScope(bateriaId) },
     include: { ritmista: true },
-    orderBy: [{ ritmista: { nombre: "asc" } }],
+    orderBy: [{ naipe: "asc" }, { ritmista: { nombre: "asc" } }],
   });
-  return rows.map((re) => ({ ritmistaEdicionId: re.id, nombre: `${re.ritmista.nombre} ${re.ritmista.apellido}` }));
+  return rows.map((re) => ({ ritmistaEdicionId: re.id, nombre: `${re.ritmista.nombre} ${re.ritmista.apellido}`, naipe: re.naipe }));
 }
 
 export async function getStockIndumentaria(): Promise<StockIndumentaria[]> {
@@ -179,7 +218,7 @@ export async function getStockIndumentaria(): Promise<StockIndumentaria[]> {
     prisma.stockIndumentaria.findMany({ where: { edicion: activaScope(bateriaId) } }),
     prisma.ritmistaEdicion.findMany({
       where: { edicion: activaScope(bateriaId) },
-      select: { ritmista: { select: { talleRemera: true } }, entregas: { where: { item: "RemeraOficial" }, select: { estado: true } } },
+      select: { ritmista: { select: { talleRemera: true } }, entregas: { where: { item: "Remera" }, select: { estado: true } } },
     }),
   ]);
 
@@ -560,24 +599,65 @@ export async function crearBeneficioDistribuidoTipo(input: {
   nombre: string;
   precioUnidad: number;
   fechaLimiteIso: string;
+  trackearNumeros?: boolean;
+  rangoDesde?: number | null;
+  rangoHasta?: number | null;
 }): Promise<BeneficioDistribuidoTipo> {
   const { bateriaId, user } = await requireBateria();
   const nombre = input.nombre.trim();
   if (!nombre || nombre.length > 120) throw new Error("Ingresá un nombre de hasta 120 caracteres");
   if (!Number.isFinite(input.precioUnidad) || input.precioUnidad <= 0) throw new Error("El precio por unidad debe ser mayor a 0");
 
+  const trackearNumeros = !!input.trackearNumeros;
+  let rangoDesde: number | null = null;
+  let rangoHasta: number | null = null;
+  if (trackearNumeros) {
+    rangoDesde = Math.trunc(input.rangoDesde ?? NaN);
+    rangoHasta = Math.trunc(input.rangoHasta ?? NaN);
+    if (!Number.isFinite(rangoDesde) || !Number.isFinite(rangoHasta) || rangoDesde > rangoHasta) {
+      throw new Error("Ingresá un rango numérico válido (desde ≤ hasta).");
+    }
+    if (rangoHasta - rangoDesde + 1 > 5000) {
+      throw new Error("El rango no puede tener más de 5000 números.");
+    }
+  }
+
   const tipo = await prisma.$transaction(async (tx) => {
     const edicion = await tx.edicion.findFirstOrThrow({ where: activaScope(bateriaId) });
     const t = await tx.beneficioDistribuidoTipo.create({
-      data: { edicionId: edicion.id, nombre, precioUnidad: input.precioUnidad, fechaLimite: toFecha(input.fechaLimiteIso) },
+      data: {
+        edicionId: edicion.id,
+        nombre,
+        precioUnidad: input.precioUnidad,
+        fechaLimite: toFecha(input.fechaLimiteIso),
+        trackearNumeros,
+        rangoDesde,
+        rangoHasta,
+      },
     });
+    if (trackearNumeros && rangoDesde !== null && rangoHasta !== null) {
+      const numeros = Array.from({ length: rangoHasta - rangoDesde + 1 }, (_, i) => rangoDesde! + i);
+      await tx.beneficioDistribuidoUnidad.createMany({
+        data: numeros.map((numero) => ({ tipoId: t.id, numero, estado: "SinAsignar" as const })),
+      });
+    }
     await tx.auditoria.create({
       data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "crearBeneficioDistribuidoTipo", entidadId: t.id, datos: JSON.parse(JSON.stringify(t)) },
     });
     return t;
   });
   revalidatePath("/", "layout");
-  return { id: tipo.id, nombre: tipo.nombre, precioUnidad: Number(tipo.precioUnidad), fechaLimiteIso: input.fechaLimiteIso, vendedores: [] };
+  return {
+    id: tipo.id,
+    nombre: tipo.nombre,
+    precioUnidad: Number(tipo.precioUnidad),
+    fechaLimiteIso: input.fechaLimiteIso,
+    trackearNumeros,
+    rangoDesde,
+    rangoHasta,
+    vendedores: [],
+    unidades: [],
+  };
 }
 
 export async function actualizarBeneficioDistribuidoTipo(input: {
@@ -658,6 +738,33 @@ export async function crearVendedor(input: {
   });
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+/** Crea un vendedor por cada ritmista activo de la edición que todavía no tenga uno en este tipo. Idempotente. */
+export async function crearVendedoresEnBloque(tipoId: string): Promise<{ creados: number }> {
+  const { bateriaId, user } = await requireBateria();
+  const tipo = await prisma.beneficioDistribuidoTipo.findFirstOrThrow({
+    where: { id: tipoId, edicion: activaScope(bateriaId) },
+    include: { vendedores: { select: { ritmistaEdicionId: true } } },
+  });
+  const yaTienenVendedor = new Set(tipo.vendedores.map((v) => v.ritmistaEdicionId).filter((id): id is string => !!id));
+
+  const ritmistasEdicion = await prisma.ritmistaEdicion.findMany({
+    where: { edicion: activaScope(bateriaId), id: { notIn: [...yaTienenVendedor] } },
+    select: { id: true },
+  });
+  if (ritmistasEdicion.length === 0) return { creados: 0 };
+
+  await prisma.$transaction(async (tx) => {
+    await tx.beneficioDistribuidoVendedor.createMany({
+      data: ritmistasEdicion.map((re) => ({ tipoId, ritmistaEdicionId: re.id, unidadesAsignadas: 0 })),
+    });
+    await tx.auditoria.create({
+      data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "crearVendedoresEnBloque", entidadId: tipoId, datos: { creados: ritmistasEdicion.length } },
+    });
+  });
+  revalidatePath("/", "layout");
+  return { creados: ritmistasEdicion.length };
 }
 
 export async function actualizarVendedor(input: { id: string; unidadesAsignadas: number }): Promise<void> {
@@ -742,9 +849,6 @@ export async function registrarVenta(input: {
         estadoLlegada: "Confirmado",
         movimientos: re.movimientos.map((m) => ({ id: m.id, tipo: m.tipo, concepto: m.concepto, fechaIso: m.fecha.toISOString(), monto: Number(m.monto), estado: m.estado, registradoPor: m.registradoPor })),
         entregas: [],
-        beneficiosAsignados: re.beneficiosAsignados,
-        beneficiosVendidos: re.beneficiosVendidos,
-        beneficios: [],
       });
       const { aplicadoADeuda, excedente } = splitVentaRitmista(montoVenta, saldo);
       breakdown = { montoVenta, saldoPendiente: saldo, aplicadoADeuda, excedente };
@@ -809,6 +913,317 @@ export async function revertirVenta(id: string): Promise<void> {
     });
   });
   revalidatePath("/", "layout");
+}
+
+/** Asigna números a un ritmista puntual, creando su registro de vendedor si todavía no lo tiene. Para la ficha del ritmista. */
+export async function asignarNumerosARitmista(input: {
+  tipoId: string;
+  ritmistaEdicionId: string;
+  numeros: number[];
+}): Promise<{ ok: true } | { error: string }> {
+  const { bateriaId, user } = await requireBateria();
+  const numeros = [...new Set(input.numeros.map((n) => Math.trunc(n)))];
+  if (numeros.length === 0) return { error: "Elegí al menos un número." };
+
+  await prisma.ritmistaEdicion.findFirstOrThrow({ where: { id: input.ritmistaEdicionId, edicion: activaScope(bateriaId) } });
+  await prisma.beneficioDistribuidoTipo.findFirstOrThrow({ where: { id: input.tipoId, edicion: activaScope(bateriaId) } });
+
+  const unidades = await prisma.beneficioDistribuidoUnidad.findMany({ where: { tipoId: input.tipoId, numero: { in: numeros } } });
+  if (unidades.length !== numeros.length) return { error: "Alguno de los números no existe en este tipo." };
+  if (unidades.some((u) => u.estado !== "SinAsignar")) {
+    return { error: "Solo se pueden asignar números en estado Sin asignar." };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    let vendedor = await tx.beneficioDistribuidoVendedor.findFirst({
+      where: { tipoId: input.tipoId, ritmistaEdicionId: input.ritmistaEdicionId },
+    });
+    if (!vendedor) {
+      vendedor = await tx.beneficioDistribuidoVendedor.create({
+        data: { tipoId: input.tipoId, ritmistaEdicionId: input.ritmistaEdicionId, unidadesAsignadas: 0 },
+      });
+    }
+    await tx.beneficioDistribuidoUnidad.updateMany({
+      where: { tipoId: input.tipoId, numero: { in: numeros } },
+      data: { estado: "Asignado", vendedorId: vendedor.id },
+    });
+    await tx.auditoria.create({
+      data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "asignarNumerosARitmista", entidadId: vendedor.id, datos: { tipoId: input.tipoId, numeros } },
+    });
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Suma cantidad a un tipo sin números para un ritmista puntual, creando su vendedor si no lo tiene. Para la ficha del ritmista. */
+export async function asignarCantidadARitmista(input: {
+  tipoId: string;
+  ritmistaEdicionId: string;
+  cantidad: number;
+}): Promise<{ ok: true } | { error: string }> {
+  const { bateriaId, user } = await requireBateria();
+  const cantidad = Math.trunc(input.cantidad);
+  if (!Number.isFinite(cantidad) || cantidad < 1) return { error: "La cantidad debe ser un entero mayor o igual a 1." };
+
+  await prisma.ritmistaEdicion.findFirstOrThrow({ where: { id: input.ritmistaEdicionId, edicion: activaScope(bateriaId) } });
+  const tipo = await prisma.beneficioDistribuidoTipo.findFirstOrThrow({ where: { id: input.tipoId, edicion: activaScope(bateriaId) } });
+  if (tipo.trackearNumeros) return { error: "Este tipo trackea números individuales — asigná números en vez de cantidad." };
+
+  await prisma.$transaction(async (tx) => {
+    let vendedor = await tx.beneficioDistribuidoVendedor.findFirst({
+      where: { tipoId: input.tipoId, ritmistaEdicionId: input.ritmistaEdicionId },
+    });
+    if (!vendedor) {
+      vendedor = await tx.beneficioDistribuidoVendedor.create({
+        data: { tipoId: input.tipoId, ritmistaEdicionId: input.ritmistaEdicionId, unidadesAsignadas: cantidad },
+      });
+    } else {
+      vendedor = await tx.beneficioDistribuidoVendedor.update({
+        where: { id: vendedor.id },
+        data: { unidadesAsignadas: { increment: cantidad } },
+      });
+    }
+    await tx.auditoria.create({
+      data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "asignarCantidadARitmista", entidadId: vendedor.id, datos: { tipoId: input.tipoId, cantidad } },
+    });
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Suma cantidad a un vendedor existente de un tipo sin números individuales. Para el módulo Beneficios. */
+export async function incrementarUnidadesVendedor(input: {
+  vendedorId: string;
+  cantidad: number;
+}): Promise<{ ok: true } | { error: string }> {
+  const { bateriaId, user } = await requireBateria();
+  const cantidad = Math.trunc(input.cantidad);
+  if (!Number.isFinite(cantidad) || cantidad < 1) return { error: "La cantidad debe ser un entero mayor o igual a 1." };
+
+  const vendedor = await prisma.beneficioDistribuidoVendedor.findFirstOrThrow({
+    where: { id: input.vendedorId, tipo: { edicion: activaScope(bateriaId) } },
+    include: { tipo: true },
+  });
+  if (vendedor.tipo.trackearNumeros) return { error: "Este tipo trackea números individuales — asigná números en vez de cantidad." };
+
+  await prisma.$transaction(async (tx) => {
+    const nuevo = await tx.beneficioDistribuidoVendedor.update({
+      where: { id: input.vendedorId },
+      data: { unidadesAsignadas: { increment: cantidad } },
+    });
+    await tx.auditoria.create({
+      data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "incrementarUnidadesVendedor", entidadId: nuevo.id, datos: { cantidad } },
+    });
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function asignarUnidades(input: {
+  tipoId: string;
+  vendedorId: string;
+  numeros: number[];
+}): Promise<{ ok: true } | { error: string }> {
+  const { bateriaId, user } = await requireBateria();
+  const numeros = [...new Set(input.numeros.map((n) => Math.trunc(n)))];
+  if (numeros.length === 0) return { error: "Elegí al menos un número." };
+
+  await prisma.beneficioDistribuidoVendedor.findFirstOrThrow({
+    where: { id: input.vendedorId, tipoId: input.tipoId, tipo: { edicion: activaScope(bateriaId) } },
+  });
+
+  const unidades = await prisma.beneficioDistribuidoUnidad.findMany({
+    where: { tipoId: input.tipoId, numero: { in: numeros } },
+  });
+  if (unidades.length !== numeros.length) return { error: "Alguno de los números no existe en este tipo." };
+  if (unidades.some((u) => u.estado !== "SinAsignar")) {
+    return { error: "Solo se pueden asignar números en estado Sin asignar." };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.beneficioDistribuidoUnidad.updateMany({
+      where: { tipoId: input.tipoId, numero: { in: numeros } },
+      data: { estado: "Asignado", vendedorId: input.vendedorId },
+    });
+    await tx.auditoria.create({
+      data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "asignarUnidades", entidadId: input.vendedorId, datos: { tipoId: input.tipoId, numeros } },
+    });
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function venderUnidad(input: { unidadId: string; fechaIso: string }): Promise<{ ok: true } | { error: string }> {
+  const { bateriaId, user } = await requireBateria();
+  const unidad = await prisma.beneficioDistribuidoUnidad.findFirstOrThrow({
+    where: { id: input.unidadId, tipo: { edicion: activaScope(bateriaId) } },
+    include: {
+      tipo: true,
+      vendedor: { include: { ritmistaEdicion: { include: { ritmista: true, movimientos: true } } } },
+    },
+  });
+  if (unidad.estado !== "Asignado" || !unidad.vendedor) {
+    return { error: "Solo se pueden vender números en estado Asignado." };
+  }
+
+  const vendedor = unidad.vendedor;
+  const montoVenta = Number(unidad.tipo.precioUnidad);
+
+  await prisma.$transaction(async (tx) => {
+    const edicionId = await requireEdicionActivaId(tx, bateriaId);
+    let movimientoCuentaCorrienteId: string | null = null;
+    let cajaMovimientoId: string | null = null;
+    let breakdown: Record<string, unknown> = { montoVenta, numero: unidad.numero };
+
+    if (!vendedor.ritmistaEdicionId || !vendedor.ritmistaEdicion) {
+      const caja = await crearCajaMovimientoTx(tx, edicionId, user, {
+        tipo: "ingreso",
+        categoria: "Otros gastos generales",
+        concepto: `Venta ${unidad.tipo.nombre} #${unidad.numero} — ${vendedor.nombreExterno}`,
+        monto: montoVenta,
+        fechaIso: input.fechaIso,
+      });
+      cajaMovimientoId = caja.id;
+    } else {
+      const re = vendedor.ritmistaEdicion;
+      const saldo = saldoPendienteDe({
+        id: re.id,
+        ritmistaId: re.ritmistaId,
+        edicionAnio: 0,
+        naipe: re.naipe,
+        estadoLlegada: "Confirmado",
+        movimientos: re.movimientos.map((m) => ({ id: m.id, tipo: m.tipo, concepto: m.concepto, fechaIso: m.fecha.toISOString(), monto: Number(m.monto), estado: m.estado, registradoPor: m.registradoPor })),
+        entregas: [],
+      });
+      const { aplicadoADeuda, excedente } = splitVentaRitmista(montoVenta, saldo);
+      breakdown = { montoVenta, numero: unidad.numero, saldoPendiente: saldo, aplicadoADeuda, excedente };
+
+      if (aplicadoADeuda > 0) {
+        const mov = await tx.movimientoCuentaCorriente.create({
+          data: {
+            ritmistaEdicionId: re.id,
+            tipo: "rifa",
+            concepto: `Venta ${unidad.tipo.nombre} #${unidad.numero}`,
+            fecha: toFecha(input.fechaIso),
+            monto: aplicadoADeuda,
+            estado: "Pagado",
+            registradoPor: user.name,
+          },
+        });
+        movimientoCuentaCorrienteId = mov.id;
+      }
+      if (excedente > 0) {
+        const caja = await crearCajaMovimientoTx(tx, edicionId, user, {
+          tipo: "ingreso",
+          categoria: "Otros gastos generales",
+          concepto: `Excedente venta ${unidad.tipo.nombre} #${unidad.numero} — ${re.ritmista.nombre} ${re.ritmista.apellido}`,
+          monto: excedente,
+          fechaIso: input.fechaIso,
+        });
+        cajaMovimientoId = caja.id;
+      }
+    }
+
+    const venta = await tx.beneficioDistribuidoVenta.create({
+      data: {
+        vendedorId: vendedor.id,
+        unidades: 1,
+        monto: montoVenta,
+        fecha: toFecha(input.fechaIso),
+        movimientoCuentaCorrienteId,
+        cajaMovimientoId,
+        registradoPor: user.name,
+      },
+    });
+
+    await tx.beneficioDistribuidoUnidad.update({
+      where: { id: unidad.id },
+      data: { estado: "Vendido", ventaId: venta.id },
+    });
+
+    await tx.auditoria.create({
+      data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "venderUnidad", entidadId: venta.id, datos: JSON.parse(JSON.stringify(breakdown)) },
+    });
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Vende varios números en una sola llamada (uno por uno, mismo efecto que venderUnidad repetido). Para acciones en lote sobre un rango. */
+export async function venderUnidades(input: { unidadIds: string[]; fechaIso: string }): Promise<{ ok: true; vendidas: number } | { error: string }> {
+  let vendidas = 0;
+  for (const unidadId of input.unidadIds) {
+    const result = await venderUnidad({ unidadId, fechaIso: input.fechaIso });
+    if ("error" in result) return { error: `Vendidos ${vendidas} de ${input.unidadIds.length}. ${result.error}` };
+    vendidas++;
+  }
+  return { ok: true, vendidas };
+}
+
+/** Devuelve varios números en una sola llamada. Para acciones en lote sobre un rango. */
+export async function devolverUnidades(unidadIds: string[]): Promise<{ ok: true; devueltas: number } | { error: string }> {
+  let devueltas = 0;
+  for (const unidadId of unidadIds) {
+    const result = await devolverUnidad(unidadId);
+    if ("error" in result) return { error: `Devueltos ${devueltas} de ${unidadIds.length}. ${result.error}` };
+    devueltas++;
+  }
+  return { ok: true, devueltas };
+}
+
+/** Reingresa varios números en una sola llamada. Para acciones en lote sobre un rango. */
+export async function reingresarUnidades(unidadIds: string[]): Promise<{ ok: true; reingresadas: number } | { error: string }> {
+  let reingresadas = 0;
+  for (const unidadId of unidadIds) {
+    const result = await reingresarUnidad(unidadId);
+    if ("error" in result) return { error: `Reingresadas ${reingresadas} de ${unidadIds.length}. ${result.error}` };
+    reingresadas++;
+  }
+  return { ok: true, reingresadas };
+}
+
+export async function devolverUnidad(unidadId: string): Promise<{ ok: true } | { error: string }> {
+  const { bateriaId, user } = await requireBateria();
+  const unidad = await prisma.beneficioDistribuidoUnidad.findFirstOrThrow({
+    where: { id: unidadId, tipo: { edicion: activaScope(bateriaId) } },
+  });
+  if (unidad.estado !== "Asignado") {
+    return { error: "Solo se pueden devolver números en estado Asignado." };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.beneficioDistribuidoUnidad.update({
+      where: { id: unidadId },
+      data: { estado: "Devuelto" },
+    });
+    await tx.auditoria.create({
+      data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "devolverUnidad", entidadId: unidadId, datos: JSON.parse(JSON.stringify(unidad)) },
+    });
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function reingresarUnidad(unidadId: string): Promise<{ ok: true } | { error: string }> {
+  const { bateriaId, user } = await requireBateria();
+  const unidad = await prisma.beneficioDistribuidoUnidad.findFirstOrThrow({
+    where: { id: unidadId, tipo: { edicion: activaScope(bateriaId) } },
+  });
+  if (unidad.estado !== "Devuelto") {
+    return { error: "Solo se pueden reingresar números en estado Devuelto." };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.beneficioDistribuidoUnidad.update({
+      where: { id: unidadId },
+      data: { estado: "SinAsignar", vendedorId: null },
+    });
+    await tx.auditoria.create({
+      data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "reingresarUnidad", entidadId: unidadId, datos: JSON.parse(JSON.stringify(unidad)) },
+    });
+  });
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 export async function guardarStockIndumentaria(input: { talle: string; cantidadStock: number }): Promise<void> {

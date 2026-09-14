@@ -22,7 +22,7 @@ interface Props {
 }
 
 export function NaipeVarianteSelect({ value, onChange, variantesPorNaipe, disabled, className }: Props) {
-  const naipes = useNaipes();
+  const naipes = [...new Set(useNaipes())];
   const { base, variante } = splitNaipeVariante(value, naipes);
   const variantes = variantesPorNaipe[base] ?? [];
 

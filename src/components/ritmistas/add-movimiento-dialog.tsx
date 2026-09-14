@@ -11,24 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { MovimientoTipo, MovimientoEstado } from "@/lib/types";
-
-const TIPOS: { value: MovimientoTipo; label: string }[] = [
-  { value: "traje", label: "Traje" },
-  { value: "remera", label: "Remera" },
-  { value: "rifa", label: "Rifa" },
-  { value: "pago", label: "Pago" },
-  { value: "ajuste", label: "Ajuste" },
-];
-
-const ESTADOS: MovimientoEstado[] = ["Pagado", "Pendiente", "Parcial"];
 
 interface AddMovimientoDialogProps {
   open: boolean;
@@ -56,30 +39,26 @@ function todayIso() {
 }
 
 export function AddMovimientoDialog({ open, onOpenChange, onCreate }: AddMovimientoDialogProps) {
-  const [tipo, setTipo] = useState<MovimientoTipo>("pago");
-  const [concepto, setConcepto] = useState("");
+  const [concepto, setConcepto] = useState("Pago");
   const [monto, setMonto] = useState("");
   const [fechaIso, setFechaIso] = useState(todayIso());
-  const [estado, setEstado] = useState<MovimientoEstado>("Pagado");
 
   const canSubmit = concepto.trim().length > 0 && Number(monto) > 0 && fechaIso.length > 0;
 
   const reset = () => {
-    setTipo("pago");
-    setConcepto("");
+    setConcepto("Pago");
     setMonto("");
     setFechaIso(todayIso());
-    setEstado("Pagado");
   };
 
   const handleSubmit = () => {
     if (!canSubmit) return;
     onCreate({
-      tipo,
+      tipo: "pago",
       concepto: concepto.trim(),
       fechaIso,
       monto: Number(monto),
-      estado,
+      estado: "Pagado",
     });
     reset();
     onOpenChange(false);
@@ -97,47 +76,16 @@ export function AddMovimientoDialog({ open, onOpenChange, onCreate }: AddMovimie
         <DialogHeader className="gap-1 border-b border-border px-6 py-5">
           <DialogTitle className="text-lg font-extrabold text-foreground">Registrar pago</DialogTitle>
           <DialogDescription className="text-[13px] text-fg-secondary">
-            Se agrega como movimiento de cuenta corriente.
+            Se agrega como movimiento de cuenta corriente y reduce el saldo pendiente.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 px-6 py-5">
-          <div className="grid grid-cols-2 gap-2.5">
-            <Field label="Tipo">
-              <Select value={tipo} onValueChange={(v) => setTipo(v as MovimientoTipo)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIPOS.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Estado">
-              <Select value={estado} onValueChange={(v) => setEstado(v as MovimientoEstado)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ESTADOS.map((e) => (
-                    <SelectItem key={e} value={e}>
-                      {e}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
-
           <Field label="Concepto">
             <Input
               value={concepto}
               onChange={(e) => setConcepto(e.target.value)}
-              placeholder="Ej. Traje de Caixa"
+              placeholder="Ej. Pago en efectivo"
             />
           </Field>
 
@@ -167,7 +115,7 @@ export function AddMovimientoDialog({ open, onOpenChange, onCreate }: AddMovimie
             Cancelar
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit} className="flex-1">
-            Guardar movimiento
+            Guardar pago
           </Button>
         </div>
       </DialogContent>

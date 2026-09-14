@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { ArrowLeft, Undo2, Trash2 } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { ArrowLeft, Undo2, Trash2, Pencil, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { NaipeVarianteSelect } from "./naipe-variante-select";
 import {
   Table,
@@ -24,9 +30,11 @@ import {
 import { RitmistaAvatar } from "./ritmista-avatar";
 import { StatusBadge } from "./status-badge";
 import { AddMovimientoDialog } from "./add-movimiento-dialog";
-import { AddBeneficioDialog } from "./add-beneficio-dialog";
+import { AssignCostoDialog } from "./assign-costo-dialog";
+import { AddAjusteDialog } from "./add-ajuste-dialog";
+import { BeneficiosRitmistaSection } from "./beneficios-ritmista-section";
+import { getBeneficiosDeRitmista } from "@/lib/presupuesto-actions";
 import type {
-  BeneficioEstado,
   EstadoLlegada,
   MovimientoEstado,
   MovimientoTipo,
@@ -37,9 +45,10 @@ import type {
 import {
   calcAge,
   formatDate,
+  formatDni,
   formatMoney,
+  formatTelefono,
   fullName,
-  historialTexto,
   initials,
   saldoPendiente,
 } from "@/lib/ritmistas-utils";
@@ -48,10 +57,10 @@ import {
   updateRitmistaEdicion,
   addMovimiento as addMovimientoAction,
   revertMovimiento as revertMovimientoAction,
-  addBeneficio as addBeneficioAction,
-  revertBeneficio as revertBeneficioAction,
   toggleEntrega as toggleEntregaAction,
   eliminarHistorialItem,
+  crearHistorialItem,
+  editarHistorialItem,
 } from "@/lib/actions";
 
 import { useCurrentUser } from "@/components/auth/user-context";
@@ -84,12 +93,13 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
   const [draft, setDraft] = useState<Draft | null>(null);
   const [movimientos, setMovimientos] = useState(edicion?.movimientos ?? []);
   const [entregas, setEntregas] = useState(edicion?.entregas ?? []);
-  const [beneficios, setBeneficios] = useState(edicion?.beneficios ?? []);
   const [historial, setHistorial] = useState(ritmista.historial);
   const [tab, setTab] = useState<"indumentaria" | "beneficios">("indumentaria");
+  const [tieneBeneficios, setTieneBeneficios] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [addMovimientoOpen, setAddMovimientoOpen] = useState(false);
-  const [addBeneficioOpen, setAddBeneficioOpen] = useState(false);
+  const [assignCostoTipo, setAssignCostoTipo] = useState<"traje" | "remera" | null>(null);
+  const [addAjusteOpen, setAddAjusteOpen] = useState(false);
 
   const edad = calcAge(ritmista.nacimientoIso);
 
@@ -101,6 +111,13 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
   const pagado = edicion
     ? movimientos.filter((m) => m.tipo === "pago").reduce((s, m) => s + m.monto, 0)
     : 0;
+  const costoPorTipo = (tipo: "traje" | "remera") =>
+    movimientos.filter((m) => m.tipo === tipo).reduce((s, m) => s + m.monto, 0);
+
+  useEffect(() => {
+    if (!edicion) return;
+    getBeneficiosDeRitmista(edicion.id).then((tipos) => setTieneBeneficios(tipos.length > 0));
+  }, [edicion]);
 
   const startEdit = () => {
     setDraft({
@@ -123,7 +140,6 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
     setDraft(null);
     setMovimientos(edicion?.movimientos ?? []);
     setEntregas(edicion?.entregas ?? []);
-    setBeneficios(edicion?.beneficios ?? []);
   };
 
   const save = () => {
@@ -142,7 +158,7 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
       ...(edicion ? {} : { naipeReferencia: draft.naipe as Ritmista["naipeReferencia"] }),
     };
     const updatedEdicion: RitmistaEdicion | null = edicion
-      ? { ...edicion, naipe: draft.naipe, estadoLlegada: draft.estadoLlegada, movimientos, entregas, beneficios }
+      ? { ...edicion, naipe: draft.naipe, estadoLlegada: draft.estadoLlegada, movimientos, entregas }
       : null;
 
     startTransition(async () => {
@@ -186,6 +202,35 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
     });
   };
 
+  const [historialForm, setHistorialForm] = useState<{ id: string | null; naipe: string; anio: string } | null>(null);
+  const [historialFormError, setHistorialFormError] = useState("");
+
+  const abrirNuevoHistorial = () => setHistorialForm({ id: null, naipe: "", anio: "" });
+  const abrirEditarHistorial = (h: (typeof historial)[number]) => setHistorialForm({ id: h.id, naipe: h.naipe, anio: String(h.desde) });
+  const cerrarHistorialForm = () => { setHistorialForm(null); setHistorialFormError(""); };
+
+  const guardarHistorialItem = () => {
+    if (!historialForm) return;
+    const anio = Number(historialForm.anio);
+    if (!historialForm.naipe.trim()) { setHistorialFormError("Ingresá el naipe."); return; }
+    if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) { setHistorialFormError("Ingresá un año válido."); return; }
+    setHistorialFormError("");
+    startTransition(async () => {
+      try {
+        if (historialForm.id) {
+          await editarHistorialItem({ id: historialForm.id, ritmistaId: ritmista.id, naipe: historialForm.naipe, anio });
+          setHistorial((prev) => prev.map((h) => (h.id === historialForm.id ? { ...h, naipe: historialForm.naipe.trim(), periodo: String(anio), desde: anio } : h)));
+        } else {
+          const creado = await crearHistorialItem({ ritmistaId: ritmista.id, naipe: historialForm.naipe, anio });
+          setHistorial((prev) => [...prev, { id: creado.id, naipe: creado.naipe, periodo: creado.periodo, desde: creado.desde }].sort((a, b) => a.desde - b.desde));
+        }
+        cerrarHistorialForm();
+      } catch {
+        setHistorialFormError("No se pudo guardar. Intentá nuevamente.");
+      }
+    });
+  };
+
   const addMovimiento = (input: {
     tipo: MovimientoTipo;
     concepto: string;
@@ -201,33 +246,6 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
     ]);
     startTransition(async () => {
       await addMovimientoAction({
-        ritmistaEdicionId: edicion.id,
-        ...input,
-      });
-    });
-  };
-
-  const revertBeneficio = (id: string) => {
-    setBeneficios((prev) => prev.filter((b) => b.id !== id));
-    startTransition(async () => {
-      await revertBeneficioAction(id);
-    });
-  };
-
-  const addBeneficio = (input: {
-    concepto: string;
-    fechaIso: string;
-    monto: number;
-    estado: BeneficioEstado;
-  }) => {
-    if (!edicion) return;
-    const tempId = `temp-${Date.now()}`;
-    setBeneficios((prev) => [
-      ...prev,
-      { id: tempId, registradoPor: registradoPor, ...input },
-    ]);
-    startTransition(async () => {
-      await addBeneficioAction({
         ritmistaEdicionId: edicion.id,
         ...input,
       });
@@ -315,7 +333,7 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
               {!editing ? (
                 <FieldValue>{ritmista.dni}</FieldValue>
               ) : (
-                <Input value={draft?.dni ?? ""} onChange={(e) => setDraft((d) => d && { ...d, dni: e.target.value })} />
+                <Input value={draft?.dni ?? ""} onChange={(e) => setDraft((d) => d && { ...d, dni: formatDni(e.target.value) })} />
               )}
             </Field>
 
@@ -325,7 +343,7 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
               ) : (
                 <Input
                   value={draft?.telefono ?? ""}
-                  onChange={(e) => setDraft((d) => d && { ...d, telefono: e.target.value })}
+                  onChange={(e) => setDraft((d) => d && { ...d, telefono: formatTelefono(e.target.value) })}
                 />
               )}
             </Field>
@@ -419,12 +437,22 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
               </Field>
             )}
 
-            <SectionLabel>Historial — qué tocó antes</SectionLabel>
-            <p className="mb-3 text-[13px] leading-relaxed text-fg-secondary">
-              {historialTexto(historial)}
-            </p>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <SectionLabel>Historial — qué tocó antes</SectionLabel>
+              <button
+                type="button"
+                disabled={isPending || historialForm !== null}
+                onClick={abrirNuevoHistorial}
+                className="text-[12px] font-semibold text-primary hover:underline disabled:pointer-events-none disabled:opacity-50"
+              >
+                + Agregar
+              </button>
+            </div>
+            {historial.length === 0 && !historialForm && (
+              <p className="mb-3 text-[13px] text-fg-tertiary">Sin historial guardado.</p>
+            )}
             {historial.length > 0 && (
-              <div className="flex flex-col gap-px overflow-hidden rounded-lg border border-border bg-border">
+              <div className="mb-3 flex flex-col gap-px overflow-hidden rounded-lg border border-border bg-border">
                 {historial.map((h) => (
                   <div key={h.id} className="flex items-center gap-3.5 bg-card p-3">
                     <div className="font-mono-num min-w-16 text-[13px] font-semibold text-foreground">
@@ -433,8 +461,17 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
                     <div className="flex-1 text-[13px] text-foreground">{h.naipe}</div>
                     <button
                       type="button"
+                      aria-label={`Editar entrada del historial: ${h.naipe} (${h.periodo})`}
+                      disabled={isPending || historialForm !== null}
+                      onClick={() => abrirEditarHistorial(h)}
+                      className="text-fg-tertiary hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                    <button
+                      type="button"
                       aria-label={`Eliminar entrada del historial: ${h.naipe} (${h.periodo})`}
-                      disabled={isPending}
+                      disabled={isPending || historialForm !== null}
                       onClick={() => borrarHistorialItem(h.id)}
                       className="text-fg-tertiary hover:text-danger disabled:pointer-events-none disabled:opacity-50"
                     >
@@ -442,6 +479,31 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+            {historialForm && (
+              <div className="space-y-2.5 rounded-lg border border-border bg-bg-subtle p-3">
+                <div className="grid grid-cols-[5rem_1fr] gap-2">
+                  <Input
+                    aria-label="Año"
+                    type="number"
+                    placeholder="Año"
+                    className="font-mono-num"
+                    value={historialForm.anio}
+                    onChange={(e) => setHistorialForm((f) => f && { ...f, anio: e.target.value })}
+                  />
+                  <Input
+                    aria-label="Naipe"
+                    placeholder="Naipe (ej. Caixa 14&quot;)"
+                    value={historialForm.naipe}
+                    onChange={(e) => setHistorialForm((f) => f && { ...f, naipe: e.target.value })}
+                  />
+                </div>
+                {historialFormError && <p role="alert" className="text-xs text-danger">{historialFormError}</p>}
+                <div className="flex gap-2">
+                  <Button size="sm" disabled={isPending} onClick={guardarHistorialItem}>Guardar</Button>
+                  <Button size="sm" variant="outline" disabled={isPending} onClick={cerrarHistorialForm}>Cancelar</Button>
+                </div>
               </div>
             )}
           </div>
@@ -452,7 +514,7 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
           <div className="mb-4 rounded-2xl bg-bg-inverse p-5.5">
             <div className="mb-2.5 flex items-center justify-between gap-3">
               <div className="text-[11px] font-semibold tracking-[0.05em] text-[#B8B8B8] uppercase">
-                Saldo pendiente — indumentaria
+                Saldo pendiente
               </div>
               {isEdition && !readOnly && (
                 <Button size="sm" onClick={() => setAddMovimientoOpen(true)}>
@@ -477,7 +539,7 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
           <Tabs value={tab} onValueChange={(v) => setTab(v as "indumentaria" | "beneficios")}>
             <TabsList>
               <TabsTrigger value="indumentaria">Indumentaria</TabsTrigger>
-              <TabsTrigger value="beneficios">Beneficios</TabsTrigger>
+              {tieneBeneficios && <TabsTrigger value="beneficios">Beneficios</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="indumentaria" className="flex flex-col gap-4">
@@ -488,50 +550,76 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
                       <TableHeader>
                         <TableRow className="hover:bg-transparent">
                           <TableHead>Ítem</TableHead>
-                          <TableHead>Fecha</TableHead>
-                          <TableHead>Estado</TableHead>
-                          <TableHead>Entregado por</TableHead>
+                          <TableHead className="text-right">Costo</TableHead>
+                          <TableHead>Entregado</TableHead>
                           <TableHead className="w-8" />
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {entregas.map((e) => (
-                          <TableRow key={e.id}>
-                            <TableCell className="font-medium">{e.item}</TableCell>
-                            <TableCell className="font-mono-num">
-                              {e.fechaEntregaIso ? formatDate(e.fechaEntregaIso) : "—"}
-                            </TableCell>
-                            <TableCell>
-                              <span
-                                className={`inline-flex h-5 items-center rounded-full border px-2.5 text-[11px] font-medium ${
-                                  e.estado === "Entregado"
-                                    ? "border-success-soft bg-success-soft text-success"
-                                    : "border-warning-soft bg-warning-soft text-warning"
-                                }`}
-                              >
-                                {e.estado}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-fg-secondary">{e.entregadoPor ?? "—"}</TableCell>
-                            <TableCell>
-                              {editing && !readOnly && (
-                                <button
-                                  onClick={() => toggleEntrega(e.id)}
-                                  className="cursor-pointer text-fg-tertiary hover:text-foreground"
-                                  title={e.estado === "Entregado" ? "Marcar pendiente" : "Marcar entregado"}
-                                >
-                                  <Undo2 className="size-3.5" />
-                                </button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {(["Traje", "Remera"] as const).map((item) => {
+                          const e = entregas.find((en) => en.item === item);
+                          const tipo = item === "Traje" ? "traje" : "remera";
+                          return (
+                            <TableRow key={item}>
+                              <TableCell className="font-medium">{item}</TableCell>
+                              <TableCell className="text-right font-mono-num font-semibold">
+                                {formatMoney(costoPorTipo(tipo))}
+                              </TableCell>
+                              <TableCell>
+                                {e && (
+                                  <button
+                                    onClick={() => toggleEntrega(e.id)}
+                                    disabled={!editing || readOnly}
+                                    className={`inline-flex h-5 items-center rounded-full border px-2.5 text-[11px] font-medium disabled:pointer-events-none disabled:opacity-70 ${
+                                      e.estado === "Entregado"
+                                        ? "cursor-pointer border-success-soft bg-success-soft text-success"
+                                        : "cursor-pointer border-warning-soft bg-warning-soft text-warning"
+                                    }`}
+                                    title={e.estado === "Entregado" ? "Marcar pendiente" : "Marcar entregado"}
+                                  >
+                                    {e.estado}
+                                  </button>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {!readOnly && (
+                                  <button
+                                    onClick={() => setAssignCostoTipo(tipo)}
+                                    className="cursor-pointer text-fg-tertiary hover:text-foreground"
+                                    title="Asignar costo"
+                                  >
+                                    <Pencil className="size-3.5" />
+                                  </button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
 
                   <div>
-                    <SectionLabel>Movimientos de cuenta corriente</SectionLabel>
+                    <div className="mb-1.5 flex items-center justify-between gap-3">
+                      <SectionLabel>Movimientos de cuenta corriente</SectionLabel>
+                      {!readOnly && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className="cursor-pointer text-fg-tertiary hover:text-foreground"
+                              title="Más opciones"
+                            >
+                              <MoreHorizontal className="size-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => setAddAjusteOpen(true)}>
+                              Cargar ajuste
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                     <div className="overflow-auto rounded-lg border border-border">
                       <Table>
                         <TableHeader>
@@ -598,88 +686,11 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
               )}
             </TabsContent>
 
-            <TabsContent value="beneficios" className="flex flex-col gap-4">
-              {isEdition ? (
-                <>
-                  <div className="grid grid-cols-3 gap-3">
-                    <MiniStat label="Beneficios asignados" value={edicion!.beneficiosAsignados} />
-                    <MiniStat label="Vendidos" value={edicion!.beneficiosVendidos} />
-                    <MiniStat
-                      label="Rendido"
-                      value={formatMoney(beneficios.reduce((s, b) => s + b.monto, 0))}
-                    />
-                  </div>
-
-                  {!readOnly && (
-                    <div className="flex justify-end">
-                      <Button size="sm" onClick={() => setAddBeneficioOpen(true)}>
-                        + Agregar beneficio
-                      </Button>
-                    </div>
-                  )}
-
-                  <div className="overflow-auto rounded-lg border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent">
-                          <TableHead>Concepto</TableHead>
-                          <TableHead>Fecha</TableHead>
-                          <TableHead className="text-right">Monto</TableHead>
-                          <TableHead>Estado</TableHead>
-                          <TableHead>Registrado por</TableHead>
-                          <TableHead className="w-8" />
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {beneficios.map((b) => (
-                          <TableRow key={b.id}>
-                            <TableCell className="font-medium">{b.concepto}</TableCell>
-                            <TableCell className="font-mono-num">{formatDate(b.fechaIso)}</TableCell>
-                            <TableCell className="text-right font-mono-num font-semibold">
-                              {formatMoney(b.monto)}
-                            </TableCell>
-                            <TableCell>
-                              <span
-                                className={`inline-flex h-5 items-center rounded-full border px-2.5 text-[11px] font-medium ${
-                                  b.estado === "Rendido"
-                                    ? "border-success-soft bg-success-soft text-success"
-                                    : "border-warning-soft bg-warning-soft text-warning"
-                                }`}
-                              >
-                                {b.estado}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-fg-secondary">{b.registradoPor}</TableCell>
-                            <TableCell>
-                              {!readOnly && (
-                                <button
-                                  onClick={() => revertBeneficio(b.id)}
-                                  className="cursor-pointer text-fg-tertiary hover:text-danger"
-                                  title="Revertir / eliminar movimiento"
-                                >
-                                  <Undo2 className="size-3.5" />
-                                </button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        {beneficios.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center text-fg-tertiary">
-                              Sin beneficios registrados.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-fg-secondary">
-                  Los beneficios se gestionan dentro de cada edición de Carnaval.
-                </p>
-              )}
-            </TabsContent>
+            {tieneBeneficios && edicion && (
+              <TabsContent value="beneficios" className="mt-0">
+                <BeneficiosRitmistaSection ritmistaEdicionId={edicion.id} readOnly={readOnly} />
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>
@@ -691,10 +702,16 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
             onOpenChange={setAddMovimientoOpen}
             onCreate={addMovimiento}
           />
-          <AddBeneficioDialog
-            open={addBeneficioOpen}
-            onOpenChange={setAddBeneficioOpen}
-            onCreate={addBeneficio}
+          <AssignCostoDialog
+            open={assignCostoTipo !== null}
+            tipo={assignCostoTipo}
+            onOpenChange={(open) => !open && setAssignCostoTipo(null)}
+            onCreate={addMovimiento}
+          />
+          <AddAjusteDialog
+            open={addAjusteOpen}
+            onOpenChange={setAddAjusteOpen}
+            onCreate={addMovimiento}
           />
         </>
       )}
@@ -723,11 +740,3 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="mb-2 text-[13px] font-semibold text-fg-secondary">{label}</div>
-      <div className="font-mono-num text-2xl font-bold text-foreground">{value}</div>
-    </div>
-  );
-}

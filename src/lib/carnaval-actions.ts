@@ -24,7 +24,7 @@ export async function prepararCarnaval(input: { anio: number; copiarRitmistas?: 
       const anteriorEd = await tx.edicion.findFirst({ where: { bateriaId, anioCarnaval: { lt: input.anio } }, orderBy: { anioCarnaval: "desc" } });
       if (anteriorEd) {
         const activos = await tx.ritmistaEdicion.findMany({ where: { edicionId: anteriorEd.id, ritmista: { bateriaId } } });
-        for (const r of activos) await tx.ritmistaEdicion.create({ data: { edicionId: nueva.id, ritmistaId: r.ritmistaId, naipe: r.naipe, entregas: { create: (["RemeraOficial", "Pantalon", "Zapatillas", "Medias", "Gorra", "AccesorioDeNaipe"] as const).map((item) => ({ item })) } } });
+        for (const r of activos) await tx.ritmistaEdicion.create({ data: { edicionId: nueva.id, ritmistaId: r.ritmistaId, naipe: r.naipe, entregas: { create: (["Traje", "Remera"] as const).map((item) => ({ item })) } } });
       }
     }
     await tx.auditoria.create({ data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "prepararCarnaval", entidadId: nueva.id, datos: { anio: input.anio, copiaRitmistas: Boolean(input.copiarRitmistas) } } });

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { ChevronRight, Mail, MessageCircle, Pencil, Check, X } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { ChevronRight, Mail, MessageCircle, Pencil } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -11,13 +11,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { cn } from "cn";
 import { RitmistaAvatar } from "./ritmista-avatar";
 import { StatusBadge } from "./status-badge";
 import { NaipeVarianteSelect } from "./naipe-variante-select";
+import { EditableCell } from "./editable-cell";
+import { EditableSelectCell } from "./editable-select-cell";
+import { NaipeDropdownCell } from "./naipe-dropdown-cell";
 import { ESTADOS_LLEGADA, type EstadoLlegada, type Nivel, type Ritmista, type RitmistaEdicion } from "@/lib/types";
-import { fullName, initials, naipeAbbr } from "@/lib/ritmistas-utils";
-import { updateRitmistaEdicion, updateRitmistaNaipeNivel } from "@/lib/actions";
+import { formatDni, fullName, initials, naipeAbbr } from "@/lib/ritmistas-utils";
+import { updateRitmistaEdicion, updateRitmistaNaipeNivel, updateRitmistaCampo } from "@/lib/actions";
 
 interface Row {
   ritmista: Ritmista;
@@ -30,6 +32,8 @@ interface RitmistasEdTableProps {
   variantesPorNaipe: Record<string, string[]>;
   onInlineSaved: (updatedRitmista: Ritmista, updatedEdicion: RitmistaEdicion) => void;
 }
+
+const NIVELES: Nivel[] = ["Avanzado", "Principiante"];
 
 function waLink(dni: string) {
   return `https://wa.me/549${dni.replace(/\D/g, "")}`;
@@ -49,10 +53,7 @@ function NivelToggle({ value, onChange, disabled }: { value: Nivel; onChange: (v
           disabled={disabled}
           aria-pressed={value === opt}
           onClick={() => onChange(opt)}
-          className={cn(
-            "h-8 rounded-full border px-2.5 text-[12px] font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50",
-            value === opt ? "border-primary bg-primary/10 text-primary" : "border-border text-fg-secondary hover:bg-bg-subtle",
-          )}
+          className={`h-8 rounded-full border px-2.5 text-[12px] font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50 ${value === opt ? "border-primary bg-primary/10 text-primary" : "border-border text-fg-secondary hover:bg-bg-subtle"}`}
         >
           {opt}
         </button>
@@ -61,7 +62,10 @@ function NivelToggle({ value, onChange, disabled }: { value: Nivel; onChange: (v
   );
 }
 
-function useInlineEdit(onInlineSaved: (updatedRitmista: Ritmista, updatedEdicion: RitmistaEdicion) => void) {
+// Mobile mantiene el modo de edición de fila completa (lápiz + Guardar/Cancelar):
+// en touch no hay hover para insinuar qué es clickeable, así que un botón explícito
+// es más claro que celdas editables sueltas.
+function useRowEdit(onInlineSaved: (updatedRitmista: Ritmista, updatedEdicion: RitmistaEdicion) => void) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [naipe, setNaipe] = useState("");
   const [nivel, setNivel] = useState<Nivel>("Avanzado");
@@ -103,7 +107,7 @@ function useInlineEdit(onInlineSaved: (updatedRitmista: Ritmista, updatedEdicion
 
 export function RitmistasEdTable({ rows, onOpen, variantesPorNaipe, onInlineSaved }: RitmistasEdTableProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const edit = useInlineEdit(onInlineSaved);
+  const rowEdit = useRowEdit(onInlineSaved);
 
   const toggleRow = (id: string) => {
     setSelected((prev) => {
@@ -121,6 +125,26 @@ export function RitmistasEdTable({ rows, onOpen, variantesPorNaipe, onInlineSave
   const toggleAll = () => {
     setSelected(allSelected ? new Set() : new Set(rows.map(({ edicion }) => edicion.id)));
   };
+
+  async function saveNaipe(row: Row, naipe: string) {
+    await Promise.all([
+      updateRitmistaEdicion({ id: row.edicion.id, naipe, estadoLlegada: row.edicion.estadoLlegada }),
+      updateRitmistaNaipeNivel({ id: row.ritmista.id, naipeReferencia: naipe, nivel: row.ritmista.nivel }),
+    ]);
+    onInlineSaved({ ...row.ritmista, naipeReferencia: naipe as Ritmista["naipeReferencia"] }, { ...row.edicion, naipe });
+  }
+  async function saveNivel(row: Row, nivel: Nivel) {
+    await updateRitmistaNaipeNivel({ id: row.ritmista.id, naipeReferencia: row.ritmista.naipeReferencia, nivel });
+    onInlineSaved({ ...row.ritmista, nivel }, row.edicion);
+  }
+  async function saveEstado(row: Row, estadoLlegada: EstadoLlegada) {
+    await updateRitmistaEdicion({ id: row.edicion.id, naipe: row.edicion.naipe, estadoLlegada });
+    onInlineSaved(row.ritmista, { ...row.edicion, estadoLlegada });
+  }
+  async function saveDni(row: Row, dni: string) {
+    await updateRitmistaCampo({ id: row.ritmista.id, campo: "dni", valor: dni });
+    onInlineSaved({ ...row.ritmista, dni }, row.edicion);
+  }
 
   return (
     <>
@@ -145,15 +169,15 @@ export function RitmistasEdTable({ rows, onOpen, variantesPorNaipe, onInlineSave
               <TableHead>Naipe</TableHead>
               <TableHead>Nivel</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead className="w-16" />
+              <TableHead className="w-8" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map(({ ritmista: r, edicion: re }, i) => {
-              const editing = edit.editingId === re.id;
+              const row = { ritmista: r, edicion: re };
               return (
-                <TableRow key={re.id} onClick={editing ? undefined : () => onOpen({ ritmista: r, edicion: re })} className={editing ? "" : "cursor-pointer"}>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
+                <TableRow key={re.id}>
+                  <TableCell>
                     <input
                       type="checkbox"
                       checked={selected.has(re.id)}
@@ -166,96 +190,71 @@ export function RitmistasEdTable({ rows, onOpen, variantesPorNaipe, onInlineSave
                     {naipeAbbr(re.naipe)}-{String(i + 1).padStart(2, "0")}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => onOpen(row)}
+                      className="flex items-center gap-2.5 text-left"
+                    >
                       <RitmistaAvatar initials={initials(r.nombre, r.apellido)} />
-                      <span className="text-foreground underline decoration-border underline-offset-2">
+                      <span className="text-foreground underline decoration-border underline-offset-2 hover:text-primary">
                         {fullName(r)}
                       </span>
-                    </div>
+                    </button>
                   </TableCell>
-                  <TableCell className="font-mono-num">{r.dni}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-mono-num">
+                    <EditableCell value={r.dni} ariaLabel={`DNI de ${fullName(r)}`} onSave={(v) => saveDni(row, v)} formatValue={formatDni} inputClassName="font-mono-num" />
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-3">
-                      <a
-                        href={waLink(r.dni)}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-fg-tertiary hover:text-foreground"
-                        aria-label="WhatsApp"
-                      >
+                      <a href={waLink(r.dni)} target="_blank" rel="noreferrer" className="text-fg-tertiary hover:text-foreground" aria-label="WhatsApp">
                         <MessageCircle className="size-4" />
                       </a>
-                      <a
-                        href={mailLink(r.dni)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-fg-tertiary hover:text-foreground"
-                        aria-label="Email"
-                      >
+                      <a href={mailLink(r.dni)} className="text-fg-tertiary hover:text-foreground" aria-label="Email">
                         <Mail className="size-4" />
                       </a>
                     </div>
                   </TableCell>
-                  <TableCell onClick={(e) => editing && e.stopPropagation()}>
-                    {editing ? (
-                      <NaipeVarianteSelect
-                        value={edit.naipe}
-                        onChange={edit.setNaipe}
-                        variantesPorNaipe={variantesPorNaipe}
-                        disabled={edit.pending}
-                        className="flex flex-wrap gap-1.5 [&_button]:h-8 [&_button]:w-32 [&_button]:text-xs"
-                      />
-                    ) : (
-                      <span className="font-mono-num text-[13px] font-medium">{re.naipe}</span>
-                    )}
+                  <TableCell>
+                    <NaipeDropdownCell
+                      value={re.naipe}
+                      variantesPorNaipe={variantesPorNaipe}
+                      ariaLabel={`Naipe de ${fullName(r)}`}
+                      onSave={(v) => saveNaipe(row, v)}
+                      className="font-mono-num text-[13px] font-medium"
+                    />
                   </TableCell>
-                  <TableCell onClick={(e) => editing && e.stopPropagation()}>
-                    {editing ? (
-                      <NivelToggle value={edit.nivel} onChange={edit.setNivel} disabled={edit.pending} />
-                    ) : (
-                      <span className="text-fg-secondary">{r.nivel}</span>
-                    )}
+                  <TableCell>
+                    <EditableSelectCell
+                      value={r.nivel}
+                      options={NIVELES}
+                      ariaLabel={`Nivel de ${fullName(r)}`}
+                      onSave={(v) => saveNivel(row, v)}
+                      className="text-fg-secondary"
+                    />
                   </TableCell>
-                  <TableCell onClick={(e) => editing && e.stopPropagation()}>
-                    {editing ? (
-                      <select
-                        aria-label="Estado de llegada"
-                        value={edit.estado}
-                        onChange={(e) => edit.setEstado(e.target.value as EstadoLlegada)}
-                        disabled={edit.pending}
-                        className="h-8 rounded-md border border-border bg-card px-2 text-xs"
-                      >
-                        {ESTADOS_LLEGADA.map((s) => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    ) : (
-                      <StatusBadge estado={re.estadoLlegada} />
-                    )}
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <EditableSelectCell
+                      value={re.estadoLlegada}
+                      options={ESTADOS_LLEGADA}
+                      ariaLabel={`Estado de llegada de ${fullName(r)}`}
+                      onSave={(v) => saveEstado(row, v)}
+                      renderValue={(v) => <StatusBadge estado={v} />}
+                    />
                   </TableCell>
-                  <TableCell className="text-fg-tertiary" onClick={(e) => e.stopPropagation()}>
-                    {editing ? (
-                      <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" aria-label="Guardar" disabled={edit.pending} onClick={() => edit.save({ ritmista: r, edicion: re })}><Check className="size-4" /></Button>
-                        <Button size="icon" variant="ghost" aria-label="Cancelar" disabled={edit.pending} onClick={edit.cancel}><X className="size-4" /></Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" aria-label={`Editar naipe, nivel y estado de ${fullName(r)}`} onClick={() => edit.start({ ritmista: r, edicion: re })}><Pencil className="size-3.5" /></Button>
-                        <ChevronRight className="size-4" />
-                      </div>
-                    )}
+                  <TableCell className="text-fg-tertiary">
+                    <ChevronRight className="size-4" />
                   </TableCell>
                 </TableRow>
               );
             })}
           </TableBody>
         </Table>
-        {edit.error && <p role="alert" className="border-t border-border px-3 py-2 text-xs text-danger">{edit.error}</p>}
       </div>
 
       {/* Mobile */}
       <div className="flex flex-col gap-px overflow-hidden rounded-xl border border-border bg-border md:hidden">
         {rows.map(({ ritmista: r, edicion: re }) => {
-          const editing = edit.editingId === re.id;
+          const editing = rowEdit.editingId === re.id;
           return (
             <div key={re.id} className="bg-card p-3.5">
               <button
@@ -272,27 +271,27 @@ export function RitmistasEdTable({ rows, onOpen, variantesPorNaipe, onInlineSave
 
               {editing ? (
                 <div className="mt-3 space-y-2.5 border-t border-border pt-3">
-                  <NaipeVarianteSelect value={edit.naipe} onChange={edit.setNaipe} variantesPorNaipe={variantesPorNaipe} disabled={edit.pending} className="flex flex-col gap-2" />
-                  <NivelToggle value={edit.nivel} onChange={edit.setNivel} disabled={edit.pending} />
+                  <NaipeVarianteSelect value={rowEdit.naipe} onChange={rowEdit.setNaipe} variantesPorNaipe={variantesPorNaipe} disabled={rowEdit.pending} className="flex flex-col gap-2" />
+                  <NivelToggle value={rowEdit.nivel} onChange={rowEdit.setNivel} disabled={rowEdit.pending} />
                   <select
                     aria-label="Estado de llegada"
-                    value={edit.estado}
-                    onChange={(e) => edit.setEstado(e.target.value as EstadoLlegada)}
-                    disabled={edit.pending}
+                    value={rowEdit.estado}
+                    onChange={(e) => rowEdit.setEstado(e.target.value as EstadoLlegada)}
+                    disabled={rowEdit.pending}
                     className="h-9 w-full rounded-md border border-border bg-card px-2 text-sm"
                   >
                     {ESTADOS_LLEGADA.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  {edit.error && <p role="alert" className="text-xs text-danger">{edit.error}</p>}
+                  {rowEdit.error && <p role="alert" className="text-xs text-danger">{rowEdit.error}</p>}
                   <div className="flex gap-2">
-                    <Button size="sm" className="h-8 flex-1 text-xs" disabled={edit.pending} onClick={() => edit.save({ ritmista: r, edicion: re })}>Guardar</Button>
-                    <Button size="sm" variant="outline" className="h-8 flex-1 text-xs" disabled={edit.pending} onClick={edit.cancel}>Cancelar</Button>
+                    <Button size="sm" className="h-8 flex-1 text-xs" disabled={rowEdit.pending} onClick={() => rowEdit.save({ ritmista: r, edicion: re })}>Guardar</Button>
+                    <Button size="sm" variant="outline" className="h-8 flex-1 text-xs" disabled={rowEdit.pending} onClick={rowEdit.cancel}>Cancelar</Button>
                   </div>
                 </div>
               ) : (
                 <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2">
                   <span className="text-xs text-fg-secondary">{r.nivel}</span>
-                  <button type="button" aria-label={`Editar naipe, nivel y estado de ${fullName(r)}`} onClick={() => edit.start({ ritmista: r, edicion: re })} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-fg-secondary hover:bg-bg-subtle hover:text-foreground">
+                  <button type="button" aria-label={`Editar naipe, nivel y estado de ${fullName(r)}`} onClick={() => rowEdit.start({ ritmista: r, edicion: re })} className="flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-fg-secondary hover:bg-bg-subtle hover:text-foreground">
                     <Pencil className="size-3.5" />Editar
                   </button>
                 </div>

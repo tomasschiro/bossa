@@ -136,28 +136,11 @@ const ritmistasSeed = [
   },
 ];
 
-const INDUMENTARIA_ITEMS = [
-  "RemeraOficial",
-  "Pantalon",
-  "Zapatillas",
-  "Medias",
-  "Gorra",
-  "AccesorioDeNaipe",
-] as const;
-
-// Etiquetas legibles usadas solo para matchear contra `entregasPendientes` (strings del mock original)
-const INDUMENTARIA_LABEL: Record<(typeof INDUMENTARIA_ITEMS)[number], string> = {
-  RemeraOficial: "Remera oficial",
-  Pantalon: "Pantalón",
-  Zapatillas: "Zapatillas",
-  Medias: "Medias",
-  Gorra: "Gorra",
-  AccesorioDeNaipe: "Accesorio de naipe",
-};
+const INDUMENTARIA_ITEMS = ["Traje", "Remera"] as const;
 
 function entregasDefault(pendienteExtra: string[] = []) {
   return INDUMENTARIA_ITEMS.map((item) => {
-    const pendiente = pendienteExtra.includes(INDUMENTARIA_LABEL[item]);
+    const pendiente = pendienteExtra.includes(item);
     const estado: "Entregado" | "Pendiente" = pendiente ? "Pendiente" : "Entregado";
     return {
       item,
@@ -175,9 +158,6 @@ const edicionDataByIndex: Record<
     estadoLlegada: "Confirmado" | "EnDuda" | "NoConfirmado";
     movimientos: { tipo: "traje" | "remera" | "rifa" | "pago" | "ajuste"; concepto: string; fecha: string; monto: number; estado: "Pagado" | "Pendiente" | "Parcial"; registradoPor: string }[];
     entregasPendientes: string[];
-    beneficiosAsignados: number;
-    beneficiosVendidos: number;
-    beneficios: { concepto: string; fecha: string; monto: number; estado: "Rendido" | "Pendiente"; registradoPor: string }[];
   }
 > = {
   0: {
@@ -188,10 +168,7 @@ const edicionDataByIndex: Record<
       { tipo: "pago", concepto: "Pago en efectivo", fecha: "2026-01-20", monto: 20000, estado: "Pagado", registradoPor: DIRECTOR_NOMBRE },
       { tipo: "pago", concepto: "Transferencia", fecha: "2026-02-05", monto: 15000, estado: "Pagado", registradoPor: "Tesorería" },
     ],
-    entregasPendientes: ["Medias"],
-    beneficiosAsignados: 15,
-    beneficiosVendidos: 12,
-    beneficios: [{ concepto: "Rifa navideña", fecha: "2025-12-15", monto: 60000, estado: "Rendido", registradoPor: DIRECTOR_NOMBRE }],
+    entregasPendientes: ["Remera"],
   },
   1: {
     naipe: "Surdo 2da",
@@ -200,10 +177,7 @@ const edicionDataByIndex: Record<
       { tipo: "traje", concepto: "Traje oficial 2026", fecha: "2026-01-10", monto: 20000, estado: "Pendiente", registradoPor: DIRECTOR_NOMBRE },
       { tipo: "pago", concepto: "Pago en efectivo", fecha: "2026-01-25", monto: 10000, estado: "Pagado", registradoPor: DIRECTOR_NOMBRE },
     ],
-    entregasPendientes: ["Medias", "Zapatillas"],
-    beneficiosAsignados: 10,
-    beneficiosVendidos: 6,
-    beneficios: [{ concepto: "Rifa navideña", fecha: "2025-12-15", monto: 30000, estado: "Pendiente", registradoPor: "Tesorería" }],
+    entregasPendientes: ["Remera", "Traje"],
   },
   2: {
     naipe: "Tamborim",
@@ -213,18 +187,12 @@ const edicionDataByIndex: Record<
       { tipo: "pago", concepto: "Pago total", fecha: "2026-01-15", monto: 20000, estado: "Pagado", registradoPor: DIRECTOR_NOMBRE },
     ],
     entregasPendientes: [],
-    beneficiosAsignados: 10,
-    beneficiosVendidos: 10,
-    beneficios: [{ concepto: "Rifa navideña", fecha: "2025-12-15", monto: 50000, estado: "Rendido", registradoPor: DIRECTOR_NOMBRE }],
   },
   3: {
     naipe: "Chocalho",
     estadoLlegada: "NoConfirmado",
     movimientos: [{ tipo: "traje", concepto: "Traje oficial 2026", fecha: "2026-01-10", monto: 20000, estado: "Pendiente", registradoPor: DIRECTOR_NOMBRE }],
-    entregasPendientes: ["Zapatillas", "Accesorio de naipe"],
-    beneficiosAsignados: 10,
-    beneficiosVendidos: 2,
-    beneficios: [{ concepto: "Rifa navideña", fecha: "2025-12-15", monto: 10000, estado: "Pendiente", registradoPor: "Tesorería" }],
+    entregasPendientes: ["Traje", "Remera"],
   },
   4: {
     naipe: "Surdo 3ra",
@@ -234,9 +202,6 @@ const edicionDataByIndex: Record<
       { tipo: "pago", concepto: "Pago total", fecha: "2026-01-12", monto: 20000, estado: "Pagado", registradoPor: DIRECTOR_NOMBRE },
     ],
     entregasPendientes: [],
-    beneficiosAsignados: 10,
-    beneficiosVendidos: 10,
-    beneficios: [{ concepto: "Rifa navideña", fecha: "2025-12-15", monto: 50000, estado: "Rendido", registradoPor: DIRECTOR_NOMBRE }],
   },
   5: {
     naipe: "Frigideiras",
@@ -245,10 +210,7 @@ const edicionDataByIndex: Record<
       { tipo: "traje", concepto: "Traje oficial 2026", fecha: "2026-01-10", monto: 20000, estado: "Pendiente", registradoPor: DIRECTOR_NOMBRE },
       { tipo: "pago", concepto: "Seña", fecha: "2026-01-18", monto: 5000, estado: "Pagado", registradoPor: "Tesorería" },
     ],
-    entregasPendientes: ["Zapatillas"],
-    beneficiosAsignados: 10,
-    beneficiosVendidos: 6,
-    beneficios: [{ concepto: "Rifa navideña", fecha: "2025-12-15", monto: 30000, estado: "Pendiente", registradoPor: "Tesorería" }],
+    entregasPendientes: ["Traje"],
   },
   6: {
     naipe: 'Repique 12"',
@@ -258,18 +220,12 @@ const edicionDataByIndex: Record<
       { tipo: "pago", concepto: "Pago total", fecha: "2026-01-11", monto: 20000, estado: "Pagado", registradoPor: DIRECTOR_NOMBRE },
     ],
     entregasPendientes: [],
-    beneficiosAsignados: 10,
-    beneficiosVendidos: 10,
-    beneficios: [{ concepto: "Rifa navideña", fecha: "2025-12-15", monto: 50000, estado: "Rendido", registradoPor: DIRECTOR_NOMBRE }],
   },
   7: {
     naipe: 'Caixa 14"',
     estadoLlegada: "NoConfirmado",
     movimientos: [{ tipo: "traje", concepto: "Traje oficial 2026", fecha: "2026-01-10", monto: 20000, estado: "Pendiente", registradoPor: DIRECTOR_NOMBRE }],
-    entregasPendientes: ["Zapatillas", "Accesorio de naipe"],
-    beneficiosAsignados: 10,
-    beneficiosVendidos: 2,
-    beneficios: [{ concepto: "Rifa navideña", fecha: "2025-12-15", monto: 10000, estado: "Pendiente", registradoPor: "Tesorería" }],
+    entregasPendientes: ["Traje", "Remera"],
   },
   8: {
     naipe: "Cuica",
@@ -278,10 +234,7 @@ const edicionDataByIndex: Record<
       { tipo: "traje", concepto: "Traje oficial 2026", fecha: "2026-01-10", monto: 20000, estado: "Pendiente", registradoPor: DIRECTOR_NOMBRE },
       { tipo: "pago", concepto: "Seña", fecha: "2026-01-22", monto: 12000, estado: "Pagado", registradoPor: "Tesorería" },
     ],
-    entregasPendientes: ["Medias"],
-    beneficiosAsignados: 10,
-    beneficiosVendidos: 6,
-    beneficios: [{ concepto: "Rifa navideña", fecha: "2025-12-15", monto: 30000, estado: "Pendiente", registradoPor: "Tesorería" }],
+    entregasPendientes: ["Remera"],
   },
   9: {
     naipe: "Surdo 1ra",
@@ -291,9 +244,6 @@ const edicionDataByIndex: Record<
       { tipo: "pago", concepto: "Pago total", fecha: "2026-01-13", monto: 20000, estado: "Pagado", registradoPor: DIRECTOR_NOMBRE },
     ],
     entregasPendientes: [],
-    beneficiosAsignados: 10,
-    beneficiosVendidos: 10,
-    beneficios: [{ concepto: "Rifa navideña", fecha: "2025-12-15", monto: 50000, estado: "Rendido", registradoPor: DIRECTOR_NOMBRE }],
   },
 };
 
@@ -372,8 +322,6 @@ async function main() {
         ritmistaId: ritmista.id,
         naipe: ed.naipe,
         estadoLlegada: ed.estadoLlegada,
-        beneficiosAsignados: ed.beneficiosAsignados,
-        beneficiosVendidos: ed.beneficiosVendidos,
         movimientos: {
           create: ed.movimientos.map((m) => ({
             tipo: m.tipo,
@@ -390,15 +338,6 @@ async function main() {
             estado: e.estado,
             fechaEntrega: e.fechaEntrega,
             entregadoPor: e.entregadoPor,
-          })),
-        },
-        beneficios: {
-          create: ed.beneficios.map((b) => ({
-            concepto: b.concepto,
-            fecha: new Date(b.fecha),
-            monto: b.monto,
-            estado: b.estado,
-            registradoPor: b.registradoPor,
           })),
         },
       },
