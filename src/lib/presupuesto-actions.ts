@@ -488,6 +488,48 @@ export async function eliminarGastoPresupuesto(id: string): Promise<void> {
   revalidatePath("/", "layout");
 }
 
+/** Marca un repuesto como comprado: crea el gasto real en caja general (categoría
+ * Instrumentos y repuestos) usando costoEstimado × cantidad como monto. */
+export async function marcarRepuestoComprado(input: { id: string; fechaIso: string }): Promise<void> {
+  const { bateriaId, user } = await requireBateria();
+  await prisma.$transaction(async (tx) => {
+    const repuesto = await tx.repuesto.findUniqueOrThrow({ where: { id: input.id, bateriaId } });
+    if (repuesto.cajaMovimientoId) throw new Error("Este repuesto ya está marcado como comprado.");
+    if (repuesto.costoEstimado == null) throw new Error("Cargá un costo estimado antes de marcarlo como comprado.");
+    const edicionId = await requireEdicionActivaId(tx, bateriaId);
+    const monto = Number(repuesto.costoEstimado) * repuesto.cantidad;
+    const cajaMovimiento = await crearCajaMovimientoTx(tx, edicionId, user, {
+      tipo: "egreso",
+      categoria: "Instrumentos y repuestos",
+      concepto: `${repuesto.categoria} — ${repuesto.descripcion}`,
+      monto,
+      fechaIso: input.fechaIso,
+    });
+    await tx.repuesto.update({
+      where: { id: input.id },
+      data: { fechaCompra: toFecha(input.fechaIso), cajaMovimientoId: cajaMovimiento.id },
+    });
+    await tx.auditoria.create({
+      data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "marcarRepuestoComprado", entidadId: input.id, datos: { monto, fechaIso: input.fechaIso } },
+    });
+  });
+  revalidatePath("/", "layout");
+}
+
+/** Deshace la compra: borra el gasto de caja y vuelve el repuesto a "pendiente". */
+export async function desmarcarRepuestoComprado(id: string): Promise<void> {
+  const { bateriaId, user } = await requireBateria();
+  await prisma.$transaction(async (tx) => {
+    const repuesto = await tx.repuesto.findUniqueOrThrow({ where: { id, bateriaId } });
+    await tx.repuesto.update({ where: { id }, data: { fechaCompra: null, cajaMovimientoId: null } });
+    if (repuesto.cajaMovimientoId) await tx.cajaMovimiento.delete({ where: { id: repuesto.cajaMovimientoId } });
+    await tx.auditoria.create({
+      data: { bateriaId, usuarioId: user.id, registradoPor: user.name, accion: "desmarcarRepuestoComprado", entidadId: id, datos: {} },
+    });
+  });
+  revalidatePath("/", "layout");
+}
+
 export async function guardarBeneficio(input: {
   id?: string;
   nombre: string;
@@ -905,6 +947,11 @@ export async function revertirVenta(id: string): Promise<void> {
     const venta = await tx.beneficioDistribuidoVenta.findUniqueOrThrow({
       where: { id, vendedor: { tipo: { edicion: activaScope(bateriaId) } } },
     });
+    // Una venta de unidad numerada deja la unidad en estado "Vendido" con ventaId
+    // apuntando acá; al revertir hay que devolverla a "Asignado" o queda huérfana
+    // en "Vendido" sin venta real asociada (no se puede volver a vender).
+    const unidad = await tx.beneficioDistribuidoUnidad.findFirst({ where: { ventaId: id } });
+    if (unidad) await tx.beneficioDistribuidoUnidad.update({ where: { id: unidad.id }, data: { estado: "Asignado", ventaId: null } });
     await tx.beneficioDistribuidoVenta.delete({ where: { id } });
     if (venta.movimientoCuentaCorrienteId) await tx.movimientoCuentaCorriente.delete({ where: { id: venta.movimientoCuentaCorrienteId } });
     if (venta.cajaMovimientoId) await tx.cajaMovimiento.delete({ where: { id: venta.cajaMovimientoId } });

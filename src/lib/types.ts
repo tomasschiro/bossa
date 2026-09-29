@@ -22,6 +22,11 @@ export const NAIPE_ABBR: Record<Naipe, string> = {
 
 export type Nivel = "Principiante" | "Avanzado";
 
+/** Talles de calzado argentinos habituales para adultos. */
+export const TALLES_CALZADO: string[] = [
+  "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46",
+];
+
 export type EstadoLlegada = "Confirmado" | "En duda" | "No confirmado";
 
 export const ESTADOS_LLEGADA: EstadoLlegada[] = [
@@ -128,6 +133,7 @@ export interface Repuesto {
   etiqueta: ItemEtiqueta | null;
   prioridad: ItemPrioridad | null;
   costoEstimado: number | null;
+  fechaCompraIso: string | null;
 }
 
 /** Ritmista dentro de una edición específica de Carnaval (tabla puente ritmistas_edicion) */

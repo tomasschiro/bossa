@@ -16,7 +16,7 @@ interface BeneficiosGeneralesTabProps {
 }
 
 export function BeneficiosGeneralesTab({ beneficios, onAdd, onEdit, onDelete }: BeneficiosGeneralesTabProps) {
-  const { gananciaNetaTotal } = metricsBeneficios(beneficios);
+  const { gananciaNetaTotal, recaudadoTotal } = metricsBeneficios(beneficios);
 
   const categorias = beneficios.map((b) => ({ label: b.nombre, value: b.ingresoBruto }));
   const donutSegments = categorias
@@ -26,9 +26,13 @@ export function BeneficiosGeneralesTab({ beneficios, onAdd, onEdit, onDelete }: 
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-1.5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <MoneyHeroCard type="balance" label="Recaudado bruto de eventos" value={recaudadoTotal} />
         <MoneyHeroCard type="balance" label="Ganancia neta de eventos" value={gananciaNetaTotal} />
       </div>
+      <p className="mb-6 text-xs text-fg-tertiary">
+        Bruto es lo recaudado antes de gastos; neto ya descuenta los gastos de cada evento.
+      </p>
 
       <CategoryGrid categories={categorias} />
 

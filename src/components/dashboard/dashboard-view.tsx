@@ -167,6 +167,23 @@ export function DashboardView({ data }: { data: Data }) {
         </div>
       </section>
 
+      {/* Beneficios: consolidado bruto/neto + distribuidos */}
+      <section className="rounded-xl border border-border bg-card p-5">
+        <h2 className="mb-1 text-sm font-semibold text-foreground">Beneficios</h2>
+        <p className="mb-4 text-xs text-fg-secondary">Generales (peñas, shows) y distribuidos (rifas, bonos) de esta edición.</p>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <MetricCard label="Recaudado bruto" value={formatMoney(data.economia.beneficiosGeneralesBruto)} />
+          <MetricCard label="Ganancia neta" value={formatMoney(data.economia.beneficiosGeneralesNeto)} valueClassName={data.economia.beneficiosGeneralesNeto < 0 ? "text-danger" : "text-success"} />
+          <MetricCard label="Vendido en rifas/bonos" value={formatMoney(data.economia.beneficiosDistribuidosVendido)} />
+          <MetricCard label="De eso, a caja general" value={formatMoney(data.economia.beneficiosDistribuidosACaja)} />
+          <MetricCard label="Total consolidado" value={formatMoney(data.economia.totalConsolidado)} accent />
+        </div>
+        <p className="mt-3 text-xs text-fg-tertiary">
+          Bruto es lo recaudado antes de gastos; neto ya descuenta los gastos de cada evento. Lo vendido en rifas/bonos que no
+          llegó a caja general quedó aplicado a la deuda de ritmistas.
+        </p>
+      </section>
+
       {/* Línea de tiempo: evolución del saldo de caja */}
       <section className="rounded-xl border border-border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold text-foreground">Evolución del saldo de caja</h2>

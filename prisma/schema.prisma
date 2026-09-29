@@ -193,15 +193,18 @@ model Instrumento {
 }
 
 model Repuesto {
-  id            String         @id @default(cuid())
-  bateriaId     String
-  bateria       Bateria        @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
-  categoria     String
-  descripcion   String
-  cantidad      Int            @default(1)
-  etiqueta      ItemEtiqueta?
-  prioridad     ItemPrioridad?
-  costoEstimado Decimal?       @db.Decimal(12, 2)
+  id               String          @id @default(cuid())
+  bateriaId        String
+  bateria          Bateria         @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
+  categoria        String
+  descripcion      String
+  cantidad         Int             @default(1)
+  etiqueta         ItemEtiqueta?
+  prioridad        ItemPrioridad?
+  costoEstimado    Decimal?        @db.Decimal(12, 2)
+  fechaCompra      DateTime?
+  cajaMovimientoId String?         @unique
+  cajaMovimiento   CajaMovimiento? @relation(fields: [cajaMovimientoId], references: [id], onDelete: SetNull)
 
   @@map("repuestos")
 }
@@ -303,6 +306,7 @@ model CajaMovimiento {
   presupuestoGasto          PresupuestoGasto?
   beneficio                 Beneficio?
   beneficioDistribuidoVenta BeneficioDistribuidoVenta?
+  repuesto                  Repuesto?
 
   @@map("caja_movimientos")
 }

@@ -33,7 +33,7 @@ interface RepuestoFormValues {
 interface RepuestoFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (values: RepuestoFormValues) => void;
+  onSubmit: (values: RepuestoFormValues) => Promise<void>;
   initialValue?: Repuesto;
   prefillCategoria?: CategoriaRepuesto;
   categoriasExistentes: string[];
@@ -57,21 +57,34 @@ export function RepuestoFormDialog({ open, onOpenChange, onSubmit, initialValue,
   const [etiqueta, setEtiqueta] = useState<ItemEtiqueta | "Ninguna">(initialValue?.etiqueta ?? "Ninguna");
   const [prioridad, setPrioridad] = useState<ItemPrioridad>(initialValue?.prioridad ?? "Deseable");
   const [costoEstimado, setCostoEstimado] = useState(initialValue?.costoEstimado?.toString() ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   const cantidadNum = parseInt(cantidad, 10);
-  const canSubmit = categoria.trim().length > 0 && categoria.trim().length <= 80 && descripcion.trim().length > 0 && Number.isFinite(cantidadNum) && cantidadNum >= 1;
+  const costoNum = costoEstimado ? Number(costoEstimado) : null;
+  const canSubmit = categoria.trim().length > 0 && categoria.trim().length <= 80 && descripcion.trim().length > 0
+    && Number.isFinite(cantidadNum) && cantidadNum >= 1
+    && (costoNum === null || (Number.isFinite(costoNum) && costoNum >= 0));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit) return;
-    onSubmit({
-      categoria: categoria.trim(),
-      descripcion: descripcion.trim(),
-      cantidad: cantidadNum,
-      etiqueta: etiqueta === "Ninguna" ? null : etiqueta,
-      prioridad: etiqueta === "Necesidad" ? prioridad : null,
-      costoEstimado: costoEstimado ? Number(costoEstimado) : null,
-    });
-    onOpenChange(false);
+    setError(null);
+    setPending(true);
+    try {
+      await onSubmit({
+        categoria: categoria.trim(),
+        descripcion: descripcion.trim(),
+        cantidad: cantidadNum,
+        etiqueta: etiqueta === "Ninguna" ? null : etiqueta,
+        prioridad: etiqueta === "Necesidad" ? prioridad : null,
+        costoEstimado: costoNum,
+      });
+      onOpenChange(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar el repuesto.");
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
@@ -114,6 +127,7 @@ export function RepuestoFormDialog({ open, onOpenChange, onSubmit, initialValue,
             <Field label="Costo estimado (opcional)">
               <Input
                 type="number"
+                min={0}
                 value={costoEstimado}
                 onChange={(e) => setCostoEstimado(e.target.value)}
                 placeholder="0"
@@ -151,14 +165,16 @@ export function RepuestoFormDialog({ open, onOpenChange, onSubmit, initialValue,
               <div />
             )}
           </div>
+
+          {error && <p className="text-[12.5px] font-medium text-danger">{error}</p>}
         </div>
 
         <div className="flex gap-2.5 border-t border-border px-6 py-4">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 bg-card">
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit} className="flex-1">
-            {isEdit ? "Guardar cambios" : "Guardar repuesto"}
+          <Button onClick={handleSubmit} disabled={!canSubmit || pending} className="flex-1">
+            {pending ? "Guardando…" : isEdit ? "Guardar cambios" : "Guardar repuesto"}
           </Button>
         </div>
       </DialogContent>

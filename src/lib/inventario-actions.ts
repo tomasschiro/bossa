@@ -134,6 +134,9 @@ function normalizeRepuestoData(input: RepuestoInput) {
   if (!Number.isFinite(cantidad) || cantidad < 1) throw new Error("La cantidad debe ser un entero mayor o igual a 1");
   const etiqueta = input.etiqueta ?? null;
   const prioridad = etiqueta === "Necesidad" ? (input.prioridad ?? null) : null;
+  if (input.costoEstimado != null && (!Number.isFinite(input.costoEstimado) || input.costoEstimado < 0)) {
+    throw new Error("El costo estimado no puede ser negativo");
+  }
   return {
     categoria,
     descripcion,
@@ -142,6 +145,11 @@ function normalizeRepuestoData(input: RepuestoInput) {
     prioridad: prioridad ?? null,
     costoEstimado: input.costoEstimado ?? null,
   };
+}
+
+/** Normaliza para comparar categorías equivalentes (mayúsculas, acentos, espacios). */
+function normalizarClave(texto: string): string {
+  return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 export async function getRepuestos(): Promise<Repuesto[]> {
@@ -156,6 +164,11 @@ export async function getRepuestos(): Promise<Repuesto[]> {
 export async function crearRepuesto(input: RepuestoInput): Promise<Repuesto> {
   const { bateriaId, user } = await requireBateria();
   const data = normalizeRepuestoData(input);
+  const existentes = await prisma.repuesto.findMany({ where: { bateriaId }, select: { categoria: true, descripcion: true } });
+  const clave = `${normalizarClave(data.categoria)}::${normalizarClave(data.descripcion)}`;
+  if (existentes.some((r) => `${normalizarClave(r.categoria)}::${normalizarClave(r.descripcion)}` === clave)) {
+    throw new Error("Ya existe un repuesto con esa categoría y descripción");
+  }
   const repuesto = await prisma.repuesto.create({ data: { bateriaId, ...data } });
   await prisma.auditoria.create({
     data: {
@@ -175,6 +188,11 @@ export async function actualizarRepuesto(input: RepuestoInput & { id: string }) 
   const { bateriaId, user } = await requireBateria();
   await prisma.repuesto.findUniqueOrThrow({ where: { id: input.id, bateriaId } });
   const data = normalizeRepuestoData(input);
+  const existentes = await prisma.repuesto.findMany({ where: { bateriaId, id: { not: input.id } }, select: { categoria: true, descripcion: true } });
+  const clave = `${normalizarClave(data.categoria)}::${normalizarClave(data.descripcion)}`;
+  if (existentes.some((r) => `${normalizarClave(r.categoria)}::${normalizarClave(r.descripcion)}` === clave)) {
+    throw new Error("Ya existe un repuesto con esa categoría y descripción");
+  }
   const repuesto = await prisma.repuesto.update({ where: { id: input.id, bateriaId }, data });
   await prisma.auditoria.create({
     data: {

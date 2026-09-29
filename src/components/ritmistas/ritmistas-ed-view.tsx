@@ -22,6 +22,7 @@ import type { EstadoLlegada, Naipe, Ritmista, RitmistaEdicion } from "@/lib/type
 import { ESTADOS_LLEGADA } from "@/lib/types";
 import { naipeGroupOf } from "@/lib/ritmistas-utils";
 import { createRitmista } from "@/lib/actions";
+import { useRouter } from "next/navigation";
 
 const ESTADO_COLOR: Record<EstadoLlegada, string> = {
   Confirmado: "text-success",
@@ -44,6 +45,7 @@ interface RitmistasEdViewProps {
 }
 
 export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, variantesPorNaipe, headerExtra }: RitmistasEdViewProps) {
+  const router = useRouter();
   const catalogo = useNaipes();
   const NAIPES = [...new Set([...catalogo, ...initialRows.map((r) => naipeGroupOf(r.edicion.naipe))])];
   const [rows, setRows] = useState<Row[]>(initialRows);
@@ -180,7 +182,12 @@ export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, varian
       {!readOnly && (
         <>
           <AddRitmistaDialog open={addOpen} onOpenChange={setAddOpen} onCreate={handleCreateRitmista} variantesPorNaipe={variantesPorNaipe} />
-          <ImportRitmistasDialog open={importOpen} onOpenChange={setImportOpen} />
+          <ImportRitmistasDialog
+            open={importOpen}
+            onOpenChange={setImportOpen}
+            edicionId={edicionId}
+            onImported={() => router.refresh()}
+          />
         </>
       )}
 

@@ -42,6 +42,7 @@ import type {
   Ritmista,
   RitmistaEdicion,
 } from "@/lib/types";
+import { TALLES_CALZADO } from "@/lib/types";
 import {
   calcAge,
   formatDate,
@@ -377,10 +378,19 @@ export function FichaRitmista({ ritmista, edicion, variantesPorNaipe, onBack, on
                 {!editing ? (
                   <FieldValue>{ritmista.calzado}</FieldValue>
                 ) : (
-                  <Input
+                  <Select
                     value={draft?.calzado ?? ""}
-                    onChange={(e) => setDraft((d) => d && { ...d, calzado: e.target.value })}
-                  />
+                    onValueChange={(v) => setDraft((d) => d && { ...d, calzado: v })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Talle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TALLES_CALZADO.map((talle) => (
+                        <SelectItem key={talle} value={talle}>{talle}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
               </Field>
             </div>

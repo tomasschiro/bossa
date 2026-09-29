@@ -200,6 +200,7 @@ export function mapRepuesto(r: PrismaRepuesto): Repuesto {
     etiqueta: r.etiqueta ? ETIQUETA_DB_TO_UI[r.etiqueta] : null,
     prioridad: r.prioridad,
     costoEstimado: r.costoEstimado ? Number(r.costoEstimado) : null,
+    fechaCompraIso: r.fechaCompra ? r.fechaCompra.toISOString().slice(0, 10) : null,
   };
 }
 

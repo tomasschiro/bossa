@@ -13,7 +13,7 @@ import { RitmistaAvatar } from "./ritmista-avatar";
 import { EditableCell } from "./editable-cell";
 import { EditableSelectCell } from "./editable-select-cell";
 import { NaipeDropdownCell } from "./naipe-dropdown-cell";
-import type { Nivel, Ritmista } from "@/lib/types";
+import { TALLES_CALZADO, type Nivel, type Ritmista } from "@/lib/types";
 import { formatDni, fullName, initials, naipeHistoryLabel } from "@/lib/ritmistas-utils";
 import { updateRitmistaNaipeNivel, updateRitmistaCampo } from "@/lib/actions";
 
@@ -107,7 +107,13 @@ export function RitmistasDbTable({ ritmistas, onOpen, variantesPorNaipe, onInlin
                   <EditableCell value={r.talleRemera} ariaLabel={`Talle de remera de ${fullName(r)}`} onSave={(v) => saveCampo(r, "talleRemera", v)} />
                 </TableCell>
                 <TableCell className="font-mono-num">
-                  <EditableCell value={r.calzado} ariaLabel={`Calzado de ${fullName(r)}`} onSave={(v) => saveCampo(r, "calzado", v)} inputClassName="font-mono-num" />
+                  <EditableSelectCell
+                    value={r.calzado}
+                    options={TALLES_CALZADO}
+                    ariaLabel={`Calzado de ${fullName(r)}`}
+                    onSave={(v) => saveCampo(r, "calzado", v)}
+                    className="text-fg-secondary"
+                  />
                 </TableCell>
                 <TableCell className="text-right text-fg-secondary">
                   {r.historial.length} {r.historial.length === 1 ? "edición" : "ediciones"}

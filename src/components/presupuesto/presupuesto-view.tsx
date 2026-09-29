@@ -38,6 +38,8 @@ import {
   getPresupuestoRubro,
   getRepuestosProyectado,
   getStockIndumentaria,
+  marcarRepuestoComprado,
+  desmarcarRepuestoComprado,
 } from "@/lib/presupuesto-actions";
 import {
   crearInstrumento,
@@ -213,20 +215,16 @@ export function PresupuestoView({
     });
   };
 
-  const handleCrearRepuesto = (values: Parameters<typeof crearRepuesto>[0]) => {
-    startTransition(async () => {
-      const created = await crearRepuesto(values);
-      setRepuestos((prev) => [...prev, created]);
-      await refreshRepuestosProyectado();
-    });
+  const handleCrearRepuesto = async (values: Parameters<typeof crearRepuesto>[0]) => {
+    const created = await crearRepuesto(values);
+    setRepuestos((prev) => [...prev, created]);
+    await refreshRepuestosProyectado();
   };
 
-  const handleActualizarRepuesto = (id: string, values: Parameters<typeof crearRepuesto>[0]) => {
-    startTransition(async () => {
-      await actualizarRepuesto({ id, ...values });
-      setRepuestos((prev) => prev.map((r) => (r.id === id ? { ...r, ...values } : r)));
-      await refreshRepuestosProyectado();
-    });
+  const handleActualizarRepuesto = async (id: string, values: Parameters<typeof crearRepuesto>[0]) => {
+    await actualizarRepuesto({ id, ...values });
+    setRepuestos((prev) => prev.map((r) => (r.id === id ? { ...r, ...values } : r)));
+    await refreshRepuestosProyectado();
   };
 
   const handleEliminarRepuesto = (id: string) => {
@@ -234,6 +232,16 @@ export function PresupuestoView({
       await eliminarRepuesto(id);
       setRepuestos((prev) => prev.filter((r) => r.id !== id));
       await refreshRepuestosProyectado();
+    });
+  };
+
+  const handleToggleCompradoRepuesto = (r: Repuesto) => {
+    const fechaCompraIso = r.fechaCompraIso ? null : new Date().toISOString().slice(0, 10);
+    startTransition(async () => {
+      if (fechaCompraIso) await marcarRepuestoComprado({ id: r.id, fechaIso: fechaCompraIso });
+      else await desmarcarRepuestoComprado(r.id);
+      setRepuestos((prev) => prev.map((item) => (item.id === r.id ? { ...item, fechaCompraIso } : item)));
+      await refreshCaja();
     });
   };
 
@@ -310,6 +318,7 @@ export function PresupuestoView({
             onDeleteInstrumento={setDeleteInstrumento}
             onEditRepuesto={setEditRepuesto}
             onDeleteRepuesto={setDeleteRepuesto}
+            onToggleCompradoRepuesto={handleToggleCompradoRepuesto}
           />
         </TabsContent>
 
@@ -412,7 +421,7 @@ export function PresupuestoView({
         key={editRepuesto?.id ?? "repuesto-edit-closed"}
         open={!!editRepuesto}
         onOpenChange={(open) => !open && setEditRepuesto(null)}
-        onSubmit={(values) => editRepuesto && handleActualizarRepuesto(editRepuesto.id, values)}
+        onSubmit={async (values) => { if (editRepuesto) await handleActualizarRepuesto(editRepuesto.id, values); }}
         initialValue={editRepuesto ?? undefined}
         categoriasExistentes={[...new Set(repuestos.map((r) => r.categoria))]}
       />

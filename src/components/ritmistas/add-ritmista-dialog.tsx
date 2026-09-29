@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "cn";
 import { NaipeVarianteSelect } from "./naipe-variante-select";
-import { type Naipe, type Nivel } from "@/lib/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TALLES_CALZADO, type Naipe, type Nivel } from "@/lib/types";
 import type { Ritmista } from "@/lib/types";
 import { formatDni, formatTelefono } from "@/lib/ritmistas-utils";
 
@@ -164,12 +165,16 @@ export function AddRitmistaDialog({ open, onOpenChange, onCreate, variantesPorNa
               />
             </Field>
             <Field label="Calzado">
-              <Input
-                value={calzado}
-                onChange={(e) => setCalzado(e.target.value)}
-                placeholder="38"
-                className="font-mono-num"
-              />
+              <Select value={calzado} onValueChange={setCalzado}>
+                <SelectTrigger className="w-full font-mono-num">
+                  <SelectValue placeholder="Talle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TALLES_CALZADO.map((talle) => (
+                    <SelectItem key={talle} value={talle}>{talle}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
           </div>
         </div>

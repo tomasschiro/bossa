@@ -16,6 +16,7 @@ import {
   actualizarRepuesto,
   eliminarRepuesto,
 } from "@/lib/inventario-actions";
+import { marcarRepuestoComprado, desmarcarRepuestoComprado } from "@/lib/presupuesto-actions";
 
 interface InventarioViewProps {
   initialInstrumentos: Instrumento[];
@@ -118,7 +119,7 @@ export function InventarioView({ initialInstrumentos, initialRepuestos }: Invent
     });
   };
 
-  const handleCreateRepuesto = (values: {
+  const handleCreateRepuesto = async (values: {
     categoria: CategoriaRepuesto;
     descripcion: string;
     cantidad: number;
@@ -126,37 +127,42 @@ export function InventarioView({ initialInstrumentos, initialRepuestos }: Invent
     prioridad?: ItemPrioridad | null;
     costoEstimado?: number | null;
   }) => {
-    startTransition(async () => {
-      const created = await crearRepuesto(values);
-      setRepuestos((prev) => [...prev, created]);
-    });
+    const created = await crearRepuesto(values);
+    setRepuestos((prev) => [...prev, created]);
   };
 
-  const handleUpdateRepuesto = (id: string, values: Parameters<typeof handleCreateRepuesto>[0]) => {
-    startTransition(async () => {
-      await actualizarRepuesto({ id, ...values });
-      setRepuestos((prev) =>
-        prev.map((r) =>
-          r.id === id
-            ? {
-                ...r,
-                categoria: values.categoria,
-                descripcion: values.descripcion,
-                cantidad: values.cantidad,
-                etiqueta: values.etiqueta ?? null,
-                prioridad: values.prioridad ?? null,
-                costoEstimado: values.costoEstimado ?? null,
-              }
-            : r,
-        ),
-      );
-    });
+  const handleUpdateRepuesto = async (id: string, values: Parameters<typeof handleCreateRepuesto>[0]) => {
+    await actualizarRepuesto({ id, ...values });
+    setRepuestos((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              categoria: values.categoria,
+              descripcion: values.descripcion,
+              cantidad: values.cantidad,
+              etiqueta: values.etiqueta ?? null,
+              prioridad: values.prioridad ?? null,
+              costoEstimado: values.costoEstimado ?? null,
+            }
+          : r,
+      ),
+    );
   };
 
   const handleDeleteRepuesto = (id: string) => {
     startTransition(async () => {
       await eliminarRepuesto(id);
       setRepuestos((prev) => prev.filter((r) => r.id !== id));
+    });
+  };
+
+  const handleToggleCompradoRepuesto = (r: Repuesto) => {
+    const fechaCompraIso = r.fechaCompraIso ? null : new Date().toISOString().slice(0, 10);
+    startTransition(async () => {
+      if (fechaCompraIso) await marcarRepuestoComprado({ id: r.id, fechaIso: fechaCompraIso });
+      else await desmarcarRepuestoComprado(r.id);
+      setRepuestos((prev) => prev.map((item) => (item.id === r.id ? { ...item, fechaCompraIso } : item)));
     });
   };
 
@@ -199,7 +205,7 @@ export function InventarioView({ initialInstrumentos, initialRepuestos }: Invent
         key={editRepuesto?.id ?? "repuesto-edit-closed"}
         open={!!editRepuesto}
         onOpenChange={(open) => !open && setEditRepuesto(null)}
-        onSubmit={(values) => editRepuesto && handleUpdateRepuesto(editRepuesto.id, values)}
+        onSubmit={async (values) => { if (editRepuesto) await handleUpdateRepuesto(editRepuesto.id, values); }}
         initialValue={editRepuesto ?? undefined}
       />
       <ConfirmDeleteDialog
@@ -241,6 +247,7 @@ export function InventarioView({ initialInstrumentos, initialRepuestos }: Invent
           onAdd={() => openAddRepuesto(groupFicha.name as CategoriaRepuesto)}
           onEdit={setEditRepuesto}
           onDelete={setDeleteRepuesto}
+          onToggleComprado={handleToggleCompradoRepuesto}
         />
         {dialogs}
       </div>

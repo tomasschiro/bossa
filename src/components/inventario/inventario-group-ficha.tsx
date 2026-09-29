@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -32,6 +32,7 @@ interface RepuestoGroupFichaProps {
   onAdd: () => void;
   onEdit: (item: Repuesto) => void;
   onDelete: (item: Repuesto) => void;
+  onToggleComprado: (item: Repuesto) => void;
 }
 
 type InventarioGroupFichaProps = InstrumentoGroupFichaProps | RepuestoGroupFichaProps;
@@ -137,6 +138,7 @@ export function InventarioGroupFicha(props: InventarioGroupFichaProps) {
           items={items as Repuesto[]}
           onEdit={props.onEdit}
           onDelete={props.onDelete}
+          onToggleComprado={props.onToggleComprado}
         />
       )}
     </div>
@@ -230,11 +232,31 @@ export function RepuestoVariantesTable({
   items,
   onEdit,
   onDelete,
+  onToggleComprado,
 }: {
   items: Repuesto[];
   onEdit: (r: Repuesto) => void;
   onDelete: (r: Repuesto) => void;
+  onToggleComprado: (r: Repuesto) => void;
 }) {
+  function CompradoToggle({ r }: { r: Repuesto }) {
+    const comprado = !!r.fechaCompraIso;
+    return (
+      <button
+        type="button"
+        onClick={() => onToggleComprado(r)}
+        disabled={!comprado && r.costoEstimado == null}
+        title={!comprado && r.costoEstimado == null ? "Cargá un costo estimado para poder marcarlo como comprado" : undefined}
+        className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12.5px] font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${
+          comprado ? "text-success hover:bg-success/10" : "text-fg-secondary hover:bg-bg-subtle"
+        }`}
+      >
+        {comprado ? <CheckCircle2 className="size-4" /> : <Circle className="size-4" />}
+        {comprado ? "Comprado" : "Pendiente"}
+      </button>
+    );
+  }
+
   return (
     <>
       <div className="hidden overflow-auto rounded-lg border border-border bg-card md:block">
@@ -244,6 +266,7 @@ export function RepuestoVariantesTable({
               <TableHead>Descripción</TableHead>
               <TableHead className="text-right">Cantidad</TableHead>
               <TableHead>Etiqueta</TableHead>
+              <TableHead>Compra</TableHead>
               <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
@@ -254,6 +277,9 @@ export function RepuestoVariantesTable({
                 <TableCell className="text-right font-mono-num">{r.cantidad}</TableCell>
                 <TableCell>
                   <EtiquetaBadge etiqueta={r.etiqueta} prioridad={r.prioridad} />
+                </TableCell>
+                <TableCell>
+                  <CompradoToggle r={r} />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1">
@@ -280,6 +306,9 @@ export function RepuestoVariantesTable({
                 <EtiquetaBadge etiqueta={r.etiqueta} prioridad={r.prioridad} />
               </div>
               <div className="mt-1.5 text-xs text-fg-secondary">Cantidad: {r.cantidad}</div>
+              <div className="mt-1.5">
+                <CompradoToggle r={r} />
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <Button variant="ghost" size="icon-sm" onClick={() => onEdit(r)} aria-label="Editar">

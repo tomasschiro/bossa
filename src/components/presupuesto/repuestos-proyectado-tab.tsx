@@ -21,6 +21,7 @@ interface RepuestosProyectadoTabProps {
   onDeleteInstrumento: (i: Instrumento) => void;
   onEditRepuesto: (r: Repuesto) => void;
   onDeleteRepuesto: (r: Repuesto) => void;
+  onToggleCompradoRepuesto: (r: Repuesto) => void;
 }
 
 function GrupoTable({ titulo, grupo }: { titulo: string; grupo: ProyeccionGrupo }) {
@@ -76,6 +77,7 @@ export function RepuestosProyectadoTab({
   onDeleteInstrumento,
   onEditRepuesto,
   onDeleteRepuesto,
+  onToggleCompradoRepuesto,
 }: RepuestosProyectadoTabProps) {
   return (
     <div>
@@ -111,7 +113,7 @@ export function RepuestosProyectadoTab({
         <h2 className="text-sm font-semibold text-foreground">Repuestos</h2>
         <Button onClick={onAddRepuesto}>+ Agregar repuesto</Button>
       </div>
-      <RepuestoVariantesTable items={repuestos} onEdit={onEditRepuesto} onDelete={onDeleteRepuesto} />
+      <RepuestoVariantesTable items={repuestos} onEdit={onEditRepuesto} onDelete={onDeleteRepuesto} onToggleComprado={onToggleCompradoRepuesto} />
     </div>
   );
 }

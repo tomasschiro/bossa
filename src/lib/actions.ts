@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "./prisma";
 import { mapRitmista, mapRitmistaEdicion, ESTADO_UI_TO_DB } from "./mappers";
 import type { Ritmista, RitmistaEdicion, EstadoLlegada, MovimientoTipo, MovimientoEstado } from "./types";
+import { TALLES_CALZADO } from "./types";
 import { getCarnaval } from "./carnaval";
 import { familiaNaipe } from "./naipes-familias";
 
@@ -136,6 +137,97 @@ export async function createRitmista(input: CreateRitmistaInput) {
 
   revalidatePath("/ritmistas/carnaval");
   revalidatePath("/ritmistas/base-de-datos");
+}
+
+export interface ImportRitmistaFila {
+  fila: number;
+  nombre: string;
+  apellido: string;
+  dni: string;
+  telefono: string;
+  nacimientoIso: string;
+  naipeReferencia: string;
+  talleRemera: string;
+  calzado: string;
+}
+
+export interface ImportRitmistasResultado {
+  creados: number;
+  errores: { fila: number; motivo: string }[];
+}
+
+/** Crea varios ritmistas de una planilla importada. Cada fila se valida y crea
+ * de forma independiente: una fila inválida no aborta el resto de la importación. */
+export async function createRitmistasBulk(
+  filas: ImportRitmistaFila[],
+  edicionId?: string,
+): Promise<ImportRitmistasResultado> {
+  const { bateriaId } = await requireBateria();
+  const destino = await getEdicion(edicionId);
+  if (!destino) throw new Error("Primero prepará el próximo Carnaval en Configuración.");
+
+  const naipesValidos = new Set(
+    (await prisma.naipe.findMany({ where: { bateriaId }, select: { nombre: true } })).map((n) => n.nombre),
+  );
+
+  const resultado: ImportRitmistasResultado = { creados: 0, errores: [] };
+  const indumentariaItems = ["Traje", "Remera"] as const;
+
+  for (const fila of filas) {
+    try {
+      if (!fila.nombre.trim() || !fila.apellido.trim()) throw new Error("Falta nombre o apellido.");
+      if (!fila.naipeReferencia.trim()) throw new Error("Falta el instrumento.");
+      if (!naipesValidos.has(familiaNaipe(fila.naipeReferencia))) {
+        throw new Error(`Instrumento "${fila.naipeReferencia}" no existe en la batería.`);
+      }
+      let fechaNacimiento: Date | null = null;
+      if (fila.nacimientoIso.trim()) {
+        fechaNacimiento = new Date(fila.nacimientoIso);
+        if (Number.isNaN(fechaNacimiento.getTime())) throw new Error(`Fecha de nacimiento inválida: "${fila.nacimientoIso}".`);
+      }
+      if (fila.calzado.trim() && !TALLES_CALZADO.includes(fila.calzado.trim())) {
+        throw new Error(`Talle de calzado "${fila.calzado}" inválido. Válidos: ${TALLES_CALZADO.join(", ")}.`);
+      }
+
+      const ritmista = await prisma.ritmista.create({
+        data: {
+          bateriaId,
+          nombre: fila.nombre.trim(),
+          apellido: fila.apellido.trim(),
+          dni: fila.dni.trim(),
+          telefono: fila.telefono.trim(),
+          fechaNacimiento: fechaNacimiento ?? new Date(0),
+          naipeReferencia: fila.naipeReferencia,
+          talleRemera: fila.talleRemera.trim(),
+          calzado: fila.calzado.trim(),
+          nivel: "Avanzado",
+          historial: {
+            create: [{ naipe: fila.naipeReferencia, periodo: `${destino.anioCarnaval}`, desde: destino.anioCarnaval }],
+          },
+        },
+      });
+
+      await prisma.ritmistaEdicion.create({
+        data: {
+          edicionId: destino.id,
+          ritmistaId: ritmista.id,
+          naipe: fila.naipeReferencia,
+          estadoLlegada: "NoConfirmado",
+          entregas: {
+            create: indumentariaItems.map((item) => ({ item, estado: "Pendiente" as const })),
+          },
+        },
+      });
+
+      resultado.creados++;
+    } catch (err) {
+      resultado.errores.push({ fila: fila.fila, motivo: err instanceof Error ? err.message : "Error desconocido." });
+    }
+  }
+
+  revalidatePath("/ritmistas/carnaval");
+  revalidatePath("/ritmistas/base-de-datos");
+  return resultado;
 }
 
 interface UpdateRitmistaInput {
