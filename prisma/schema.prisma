@@ -106,12 +106,14 @@ model Bateria {
   logoUrl       String?
   createdAt     DateTime @default(now())
 
-  membresias   Membresia[]
-  naipes       Naipe[]
-  ritmistas    Ritmista[]
-  ediciones    Edicion[]
-  instrumentos Instrumento[]
-  repuestos    Repuesto[]
+  membresias    Membresia[]
+  naipes        Naipe[]
+  ritmistas     Ritmista[]
+  ediciones     Edicion[]
+  instrumentos  Instrumento[]
+  repuestos     Repuesto[]
+  inscripciones Inscripcion[]
+  fotos         FotoRitmista[]
 
   @@map("baterias")
 }
@@ -143,24 +145,84 @@ model NaipeVariante {
 
 /// Padrón general — atemporal, sin año
 model Ritmista {
-  id              String   @id @default(cuid())
+  id              String        @id @default(cuid())
   bateriaId       String
-  bateria         Bateria  @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
+  bateria         Bateria       @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
   nombre          String
   apellido        String
   dni             String
   telefono        String
   fechaNacimiento DateTime
   naipeReferencia String
-  nivel           Nivel    @default(Principiante)
+  nivel           Nivel         @default(Principiante)
   talleRemera     String
   calzado         String
-  createdAt       DateTime @default(now())
+  email           String?
+  /// Solo para menores de 18
+  telefonoTutor   String?
+  fotoId          String?       @unique
+  foto            FotoRitmista? @relation(fields: [fotoId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
 
   historial        NaipeHistorialItem[]
   ritmistasEdicion RitmistaEdicion[]
 
   @@map("ritmistas")
+}
+
+/// Foto de cara comprimida. Vive en una tabla aparte para no cargar los bytes al listar
+/// ritmistas o inscripciones; solo se sirve a directores de la misma batería.
+model FotoRitmista {
+  id        String   @id @default(cuid())
+  bateriaId String
+  bateria   Bateria  @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
+  mime      String
+  datos     Bytes
+  createdAt DateTime @default(now())
+
+  ritmista    Ritmista?
+  inscripcion Inscripcion?
+
+  @@map("fotos_ritmistas")
+}
+
+enum InscripcionEstado {
+  Pendiente
+  Aprobada
+  Rechazada
+}
+
+/// Ficha que completa el propio ritmista desde /inscripcion. La dirección asigna el nivel
+/// y la aprueba (pasa al padrón como Ritmista) o la rechaza.
+model Inscripcion {
+  id              String            @id @default(cuid())
+  bateriaId       String
+  bateria         Bateria           @relation(fields: [bateriaId], references: [id], onDelete: Cascade)
+  nombre          String
+  apellido        String
+  dni             String
+  telefono        String
+  email           String?
+  fechaNacimiento DateTime
+  naipe           String
+  talleRemera     String
+  calzado         String
+  telefonoTutor   String?
+  fotoId          String?           @unique
+  foto            FotoRitmista?     @relation(fields: [fotoId], references: [id], onDelete: SetNull)
+  estado          InscripcionEstado @default(Pendiente)
+  /// Hash de la IP (con secreto) para limitar envíos; no guarda la IP real.
+  ipHash          String
+  ritmistaId      String?
+  revisadoPorId   String?
+  revisadoPor     String?
+  revisadoAt      DateTime?
+  createdAt       DateTime          @default(now())
+
+  @@index([bateriaId, estado])
+  @@index([bateriaId, dni])
+  @@index([ipHash, createdAt])
+  @@map("inscripciones")
 }
 
 /// Historial de qué naipe tocó cada ritmista, por período — para el padrón histórico
@@ -234,13 +296,13 @@ model Edicion {
 
 /// Tabla puente: ritmista activo en una edición específica de Carnaval
 model RitmistaEdicion {
-  id                  String        @id @default(cuid())
-  edicionId           String
-  edicion             Edicion       @relation(fields: [edicionId], references: [id], onDelete: Cascade)
-  ritmistaId          String
-  ritmista            Ritmista      @relation(fields: [ritmistaId], references: [id], onDelete: Cascade)
-  naipe               String
-  estadoLlegada       EstadoLlegada @default(NoConfirmado)
+  id            String        @id @default(cuid())
+  edicionId     String
+  edicion       Edicion       @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  ritmistaId    String
+  ritmista      Ritmista      @relation(fields: [ritmistaId], references: [id], onDelete: Cascade)
+  naipe         String
+  estadoLlegada EstadoLlegada @default(NoConfirmado)
 
   movimientos                    MovimientoCuentaCorriente[]
   entregas                       EntregaIndumentaria[]
@@ -413,15 +475,15 @@ model BeneficioDistribuidoVendedor {
 }
 
 model BeneficioDistribuidoUnidad {
-  id         String                       @id @default(cuid())
+  id         String                        @id @default(cuid())
   tipoId     String
-  tipo       BeneficioDistribuidoTipo     @relation(fields: [tipoId], references: [id], onDelete: Cascade)
+  tipo       BeneficioDistribuidoTipo      @relation(fields: [tipoId], references: [id], onDelete: Cascade)
   numero     Int
-  estado     BeneficioUnidadEstado        @default(SinAsignar)
+  estado     BeneficioUnidadEstado         @default(SinAsignar)
   vendedorId String?
   vendedor   BeneficioDistribuidoVendedor? @relation(fields: [vendedorId], references: [id], onDelete: SetNull)
-  ventaId    String?                      @unique
-  venta      BeneficioDistribuidoVenta?   @relation(fields: [ventaId], references: [id], onDelete: SetNull)
+  ventaId    String?                       @unique
+  venta      BeneficioDistribuidoVenta?    @relation(fields: [ventaId], references: [id], onDelete: SetNull)
 
   @@unique([tipoId, numero])
   @@map("beneficio_distribuido_unidades")

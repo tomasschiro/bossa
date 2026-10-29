@@ -15,9 +15,10 @@ import { createRitmista } from "@/lib/actions";
 interface RitmistasDbViewProps {
   initialRitmistas: Ritmista[];
   variantesPorNaipe: Record<string, string[]>;
+  headerExtra?: React.ReactNode;
 }
 
-export function RitmistasDbView({ initialRitmistas, variantesPorNaipe }: RitmistasDbViewProps) {
+export function RitmistasDbView({ initialRitmistas, variantesPorNaipe, headerExtra }: RitmistasDbViewProps) {
   const [ritmistas, setRitmistas] = useState<Ritmista[]>(initialRitmistas);
   const [search, setSearch] = useState("");
   const [naipeFilter, setNaipeFilter] = useState<Naipe | "Todos">("Todos");
@@ -50,6 +51,8 @@ export function RitmistasDbView({ initialRitmistas, variantesPorNaipe }: Ritmist
         talleRemera: data.talleRemera,
         calzado: data.calzado,
         nivel: data.nivel,
+        email: data.email,
+        telefonoTutor: data.telefonoTutor,
       });
       // El padrón se refresca al re-navegar; agregamos localmente para feedback inmediato.
       setRitmistas((prev) => [
@@ -78,7 +81,10 @@ export function RitmistasDbView({ initialRitmistas, variantesPorNaipe }: Ritmist
           <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Ritmistas</h1>
           <p className="text-[13px] text-fg-secondary">Padrón histórico completo</p>
         </div>
-        <Button onClick={() => setAddOpen(true)}>+ Nuevo ritmista</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {headerExtra}
+          <Button onClick={() => setAddOpen(true)}>+ Nuevo ritmista</Button>
+        </div>
       </div>
 
       <AddRitmistaDialog open={addOpen} onOpenChange={setAddOpen} onCreate={handleCreate} variantesPorNaipe={variantesPorNaipe} />

@@ -7,6 +7,9 @@ import type { Ritmista, RitmistaEdicion, EstadoLlegada, MovimientoTipo, Movimien
 import { TALLES_CALZADO } from "./types";
 import { getCarnaval } from "./carnaval";
 import { familiaNaipe } from "./naipes-familias";
+import { crearRitmistaEnEdicion } from "./ritmista-alta";
+import { emailValido, esMenor } from "./inscripcion-utils";
+import { hoyArgentina } from "./agenda-utils";
 
 import { requireBateria } from "./session";
 
@@ -93,6 +96,8 @@ interface CreateRitmistaInput {
   talleRemera: string;
   calzado: string;
   nivel?: "Principiante" | "Avanzado";
+  email?: string;
+  telefonoTutor?: string;
 }
 
 /** Crea un ritmista en el padrón y lo suma a una edición (activa por defecto) como No confirmado */
@@ -101,38 +106,17 @@ export async function createRitmista(input: CreateRitmistaInput) {
   await prisma.naipe.findFirstOrThrow({ where: { bateriaId, nombre: familiaNaipe(input.naipeReferencia) } });
   const destino = await getEdicion(input.edicionId);
   if (!destino) throw new Error("Primero prepará el próximo Carnaval en Configuración.");
-  const edicionId = destino.id;
 
-  const ritmista = await prisma.ritmista.create({
-    data: {
-      bateriaId,
-      nombre: input.nombre,
-      apellido: input.apellido,
-      dni: input.dni,
-      telefono: input.telefono,
-      fechaNacimiento: new Date(input.nacimientoIso),
-      naipeReferencia: input.naipeReferencia,
-      talleRemera: input.talleRemera,
-      calzado: input.calzado,
-      nivel: input.nivel ?? "Avanzado",
-      historial: {
-        create: [{ naipe: input.naipeReferencia, periodo: `${destino.anioCarnaval}`, desde: destino.anioCarnaval }],
-      },
-    },
-  });
+  const email = input.email?.trim() ?? "";
+  if (email && !emailValido(email)) throw new Error("El mail no tiene un formato válido.");
+  // El teléfono del tutor solo se guarda para menores, igual que en la ficha pública.
+  const telefonoTutor = esMenor(input.nacimientoIso, hoyArgentina()) ? input.telefonoTutor?.trim() : "";
 
-  const indumentariaItems = ["Traje", "Remera"] as const;
-
-  await prisma.ritmistaEdicion.create({
-    data: {
-      edicionId,
-      ritmistaId: ritmista.id,
-      naipe: input.naipeReferencia,
-      estadoLlegada: "NoConfirmado",
-      entregas: {
-        create: indumentariaItems.map((item) => ({ item, estado: "Pendiente" as const })),
-      },
-    },
+  await crearRitmistaEnEdicion(prisma, bateriaId, destino, {
+    ...input,
+    nivel: input.nivel ?? "Avanzado",
+    email,
+    telefonoTutor,
   });
 
   revalidatePath("/ritmistas/carnaval");

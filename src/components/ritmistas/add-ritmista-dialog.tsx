@@ -18,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TALLES_CALZADO, type Naipe, type Nivel } from "@/lib/types";
 import type { Ritmista } from "@/lib/types";
 import { formatDni, formatTelefono } from "@/lib/ritmistas-utils";
+import { emailValido, esMenor } from "@/lib/inscripcion-utils";
+import { hoyArgentina } from "@/lib/agenda-utils";
 
 interface AddRitmistaDialogProps {
   open: boolean;
@@ -46,8 +48,12 @@ export function AddRitmistaDialog({ open, onOpenChange, onCreate, variantesPorNa
   const [nivel, setNivel] = useState<Nivel>("Avanzado");
   const [talleRemera, setTalleRemera] = useState("");
   const [calzado, setCalzado] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefonoTutor, setTelefonoTutor] = useState("");
 
-  const canSubmit = naipeRef.trim().length > 0 && nombre.trim().length > 0 && apellido.trim().length > 0;
+  const menor = esMenor(nacimientoIso, hoyArgentina());
+  const emailInvalido = email.trim().length > 0 && !emailValido(email.trim());
+  const canSubmit = naipeRef.trim().length > 0 && nombre.trim().length > 0 && apellido.trim().length > 0 && !emailInvalido;
 
   const reset = () => {
     setNombre("");
@@ -59,6 +65,8 @@ export function AddRitmistaDialog({ open, onOpenChange, onCreate, variantesPorNa
     setNivel("Avanzado");
     setTalleRemera("");
     setCalzado("");
+    setEmail("");
+    setTelefonoTutor("");
   };
 
   const handleSubmit = () => {
@@ -72,6 +80,8 @@ export function AddRitmistaDialog({ open, onOpenChange, onCreate, variantesPorNa
       nivel,
       talleRemera,
       calzado,
+      email: email.trim(),
+      telefonoTutor: menor ? telefonoTutor : "",
       naipeReferencia: naipeRef as Naipe,
     });
     reset();
@@ -121,6 +131,17 @@ export function AddRitmistaDialog({ open, onOpenChange, onCreate, variantesPorNa
             </Field>
           </div>
 
+          <Field label="Email">
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="nombre@mail.com"
+              aria-invalid={emailInvalido || undefined}
+            />
+            {emailInvalido && <p className="mt-1.5 text-[12.5px] text-danger">Revisá el formato del mail.</p>}
+          </Field>
+
           <Field label="Fecha de nacimiento">
             <Input
               type="date"
@@ -129,6 +150,17 @@ export function AddRitmistaDialog({ open, onOpenChange, onCreate, variantesPorNa
               className="font-mono-num"
             />
           </Field>
+
+          {menor && (
+            <Field label="Teléfono del tutor">
+              <Input
+                value={telefonoTutor}
+                onChange={(e) => setTelefonoTutor(formatTelefono(e.target.value))}
+                placeholder="3772-441826"
+                className="font-mono-num"
+              />
+            </Field>
+          )}
 
           <Field label="Instrumento">
             <NaipeVarianteSelect value={naipeRef} onChange={setNaipeRef} variantesPorNaipe={variantesPorNaipe} />

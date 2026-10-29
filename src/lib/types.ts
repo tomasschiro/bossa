@@ -56,6 +56,9 @@ export interface Ritmista {
   nivel: Nivel;
   talleRemera: string;
   calzado: string;
+  email?: string;
+  /** Solo para menores de 18 */
+  telefonoTutor?: string;
   /** naipe de referencia actual */
   naipeReferencia: Naipe;
   /** historial completo, ordenado ascendente por año */

@@ -3,6 +3,8 @@ import { RitmistasEdicionSelector } from "@/components/ritmistas/ritmistas-edici
 import { getRitmistasEdicion } from "@/lib/actions";
 import { getNaipes } from "@/lib/naipes-actions";
 import { getCarnaval } from "@/lib/carnaval";
+import { contarInscripcionesPendientes } from "@/lib/inscripciones-actions";
+import { InscripcionesButton } from "@/components/inscripciones/inscripciones-button";
 import Link from "next/link";
 
 export default async function RitmistasCarnavalPage({ searchParams }: { searchParams: Promise<{ edicion?: string }> }) {
@@ -10,7 +12,7 @@ export default async function RitmistasCarnavalPage({ searchParams }: { searchPa
   const { actual, preparada, proximoAnio } = await getCarnaval();
   const opciones = [actual, preparada].filter((e): e is NonNullable<typeof e> => e !== null);
   const seleccionada = opciones.find((e) => e.id === edicionParam) ?? actual ?? preparada;
-  const [rows, naipes] = await Promise.all([getRitmistasEdicion(seleccionada?.id), getNaipes()]);
+  const [rows, naipes, pendientes] = await Promise.all([getRitmistasEdicion(seleccionada?.id), getNaipes(), contarInscripcionesPendientes()]);
   const variantesPorNaipe = Object.fromEntries(naipes.map((n) => [n.nombre, n.variantes.map((v) => v.nombre)]));
   return (
     <>
@@ -22,7 +24,7 @@ export default async function RitmistasCarnavalPage({ searchParams }: { searchPa
         edicionId={seleccionada?.id}
         readOnly={!seleccionada}
         variantesPorNaipe={variantesPorNaipe}
-        headerExtra={opciones.length > 1 ? <RitmistasEdicionSelector opciones={opciones} seleccionadaId={seleccionada?.id ?? ""} /> : null}
+        headerExtra={<>{opciones.length > 1 && <RitmistasEdicionSelector opciones={opciones} seleccionadaId={seleccionada?.id ?? ""} />}<InscripcionesButton pendientes={pendientes} /></>}
       />
     </>
   );

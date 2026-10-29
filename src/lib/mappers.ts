@@ -130,6 +130,8 @@ export function mapRitmista(r: PrismaRitmista & { historial: PrismaHistorial[] }
     nivel: r.nivel as Nivel,
     talleRemera: r.talleRemera,
     calzado: r.calzado,
+    email: r.email ?? "",
+    telefonoTutor: r.telefonoTutor ?? "",
     naipeReferencia: r.naipeReferencia as Naipe,
     historial: r.historial
       .map(mapHistorial)

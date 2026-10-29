@@ -20,7 +20,8 @@
     "test:presupuesto": "node --env-file=.env.local scripts/presupuesto-smoke.mjs",
     "test:dashboard": "node --env-file=.env.local scripts/dashboard-smoke.mjs",
     "test:superadmin": "node --env-file=.env.local scripts/superadmin-smoke.mjs",
-    "test:logo": "node --env-file=.env.local scripts/logo-smoke.mjs"
+    "test:logo": "node --env-file=.env.local scripts/logo-smoke.mjs",
+    "test:inscripcion": "node --env-file=.env.local scripts/inscripcion-smoke.mjs"
   },
   "prisma": {
     "seed": "node --env-file=.env.local --import tsx prisma/seed.ts"

@@ -116,6 +116,8 @@ export function RitmistasEdView({ initialRows, anio, edicionId, readOnly, varian
         talleRemera: data.talleRemera,
         calzado: data.calzado,
         nivel: data.nivel,
+        email: data.email,
+        telefonoTutor: data.telefonoTutor,
       });
       // Feedback inmediato en la tabla; el server component confirma con datos reales al re-navegar.
       const tmpId = `tmp-${Date.now()}`;
